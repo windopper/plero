@@ -32,7 +32,6 @@ export const WIKI_SCHEMA = z.object({
     createdAt: z.number(), // 생성 시간 (timestamp)
     updatedAt: z.number(), // 마지막 수정 시간 (timestamp)
     version: z.number().int().positive(), // 현재 버전 번호
-    author: z.string(), // 생성자 ID
     authorId: z.string(), // 생성자 고유 ID
     authorName: z.string(), // 생성자 이름
     authorEmail: z.string().email(), // 생성자 이메일
@@ -47,19 +46,10 @@ export const WIKI_SCHEMA = z.object({
 export const WIKI_CONTRIBUTORS_SCHEMA = z.object({
     id: z.string().uuid(), // Primary key
     wikiId: z.string().uuid(), // Foreign key to Wiki
-    contributorId: z.string(), // 기여자 ID
+    contributorId: z.string().uuid(), // Foreign key to User
     contributorName: z.string(), // 기여자 이름
     contributorEmail: z.string().email(), // 기여자 이메일
     contributedAt: z.number(), // 기여 시간 (timestamp)
-    contributionType: z.enum([
-        "create", 
-        "edit", 
-        "review", 
-        "translation", 
-        "formatting",
-        "media_upload"
-    ]), // 기여 유형
-    contributionDescription: z.string().optional(), // 기여 설명
     linesAdded: z.number().int().min(0).default(0), // 추가된 라인 수
     linesRemoved: z.number().int().min(0).default(0), // 삭제된 라인 수
 })
@@ -80,7 +70,7 @@ export const WIKI_HISTORY_SCHEMA = z.object({
         "delete",
         "restore"
     ]), // 변경 유형
-    changedBy: z.string(), // 변경자 ID
+    changedBy: z.string().uuid(), // Foreign key to User
     changedByName: z.string(), // 변경자 이름
     changedByEmail: z.string().email(), // 변경자 이메일
     changedAt: z.number(), // 변경 시간 (timestamp)

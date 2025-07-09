@@ -29,19 +29,7 @@ export default defineOAuthGoogleEventHandler({
 
             // 세션에 사용자 정보 저장 (DB 사용자 정보 기반)
             await setUserSession(event, {
-                user: {
-                    id: dbUser.data.id,
-                    provider: dbUser.data.provider,
-                    avatar: dbUser.data.avatar || user.picture,
-                    name: dbUser.data.name,
-                    email: dbUser.data.email,
-                    role: dbUser.data.role,
-                    displayName: dbUser.data.displayName || dbUser.data.name,
-                    loggedInAt: new Date().toISOString(),
-                    loggedOutAt: null,
-                    loggedIn: true,
-                    loggedOut: false,
-                }
+                user: dbUser.data,
             });
 
             return sendRedirect(event, '/');

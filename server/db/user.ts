@@ -3,15 +3,7 @@ import app from ".";
 import { USER_COLLECTION } from "./constants";
 import { User, USER_SCHEMA } from "./schema";
 import { v4 as uuidv4 } from 'uuid';
-
-// 일관성 있는 반환 타입 정의
-type DbResult<T> = {
-    success: true;
-    data: T;
-} | {
-    success: false;
-    error: { message: string };
-};
+import type { DbResult } from '../type';
 
 // 기본 사용자 CRUD
 export async function getUser(id: string): Promise<DbResult<User>> {
@@ -40,8 +32,7 @@ export async function setUser(id: string, data: Omit<User, 'id'>): Promise<DbRes
         return { success: false, error: { message: "Invalid user data" } };
     }
     
-    const { id: userId, ...userData } = parseResult.data;
-    await setDoc(docRef, userData);
+    await setDoc(docRef, parseResult.data);
     return { success: true, data: parseResult.data };
 }
 
@@ -63,15 +54,15 @@ export async function updateUser(id: string, data: Partial<Omit<User, 'id'>>): P
         return { success: false, error: { message: "Invalid updated user data" } };
     }
     
-    const { id: userId, ...userData } = parseResult.data;
-    await updateDoc(docRef, userData);
+    await updateDoc(docRef, parseResult.data);
     return { success: true, data: parseResult.data };
 }
 
-export async function deleteUser(id: string): Promise<void> {
+export async function deleteUser(id: string): Promise<DbResult<void>> {
     const db = getFirestore(app);
     const docRef = doc(db, USER_COLLECTION, id);
     await deleteDoc(docRef);
+    return { success: true, data: undefined };
 }
 
 export async function getUserByEmail(email: string): Promise<DbResult<User>> {
@@ -82,7 +73,7 @@ export async function getUserByEmail(email: string): Promise<DbResult<User>> {
     
     if (!querySnapshot.empty) {
         const doc = querySnapshot.docs[0];
-        const result = USER_SCHEMA.safeParse({ id: doc.id, ...doc.data() });
+        const result = USER_SCHEMA.safeParse(doc.data());
         if (result.success) {
             return { success: true, data: result.data };
         } else {

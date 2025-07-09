@@ -1,17 +1,30 @@
-import { getWiki, setWiki } from "./wikiStorage" 
+import { User } from "../db/schema"
+import { createWikiService } from "../service/wiki"
+import { requireUserSessionForTest } from "../utils/testAuth"
 
 export default defineEventHandler(async (event) => {
     const body = await readBody(event)
-    const { id, content } = body
-    if (!id || !content) {
+    const { title, content } = body
+    if (!title || !content) {
         throw createError({
             statusCode: 400,
             statusMessage: "Invalid request"
         })
     }
-    setWiki(id, content)
-    return {
-        message: "Success",
-        content: await getWiki(id)
+
+    const { user } = await requireUserSessionForTest(event)
+    const createWikiResult = await createWikiService({
+        title,
+        content,
+        author: user as User,
+    })
+
+    if (!createWikiResult.success) {
+        throw createError({
+            statusCode: 500,
+            statusMessage: "Failed to create wiki"
+        })
     }
+
+    return createWikiResult
 })

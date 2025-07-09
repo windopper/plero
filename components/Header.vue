@@ -3,7 +3,6 @@ import Search from './common/Search.vue';
 import ThemeToggle from './common/ThemeToggle.vue';
 
 const { loggedIn, user, session, fetch, clear, openInPopup } = useUserSession()
-console.log(session.value);
 </script>
 
 <template>

@@ -7,7 +7,8 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "test": "vitest run"
   },
   "dependencies": {
     "@nuxt/content": "^3.6.3",
@@ -26,6 +27,11 @@
   },
   "devDependencies": {
     "@iconify/vue": "^5.0.0",
-    "@nuxtjs/color-mode": "^3.5.2"
+    "@nuxt/test-utils": "^3.19.2",
+    "@nuxtjs/color-mode": "^3.5.2",
+    "@vue/test-utils": "^2.4.6",
+    "happy-dom": "^18.0.1",
+    "playwright-core": "^1.53.2",
+    "vitest": "^3.2.4"
   }
 }
