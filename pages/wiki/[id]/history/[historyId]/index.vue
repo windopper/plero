@@ -136,39 +136,34 @@ const historyData = computed(() => response.value?.data)
                 <div class="flex justify-between items-center py-4 flex-wrap gap-4">
                     <!-- 왼쪽: 브레드크럼 -->
                     <div class="flex items-center gap-2 text-sm">
-                        <button 
-                            @click="navigateToCurrentPage" 
-                            class="flex items-center gap-2 text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors duration-200 group"
-                        >
-                            <Icon icon="material-symbols:arrow-back" width="20" height="20" class="group-hover:scale-110 transition-transform duration-200" />
+                        <button @click="navigateToCurrentPage"
+                            class="flex items-center gap-2 text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors duration-200 group">
+                            <Icon icon="material-symbols:arrow-back" width="20" height="20"
+                                class="group-hover:scale-110 transition-transform duration-200" />
                             <span class="font-medium">위키</span>
                         </button>
-                        <Icon icon="material-symbols:chevron-right" width="16" height="16" class="text-[var(--ui-border-accented)]" />
-                        <button 
-                            @click="navigateToHistoryList" 
-                            class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors duration-200 font-medium"
-                        >
+                        <Icon icon="material-symbols:chevron-right" width="16" height="16"
+                            class="text-[var(--ui-border-accented)]" />
+                        <button @click="navigateToHistoryList"
+                            class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors duration-200 font-medium">
                             변경 기록
                         </button>
-                        <Icon icon="material-symbols:chevron-right" width="16" height="16" class="text-[var(--ui-border-accented)]" />
+                        <Icon icon="material-symbols:chevron-right" width="16" height="16"
+                            class="text-[var(--ui-border-accented)]" />
                         <span class="text-[var(--ui-text)] font-semibold">
                             v{{ historyData?.version }} 보기
                         </span>
                     </div>
-                    
+
                     <!-- 오른쪽: 액션 버튼들 -->
                     <div class="flex items-center gap-3">
-                        <button 
-                            @click="navigateToVersionDiff"
-                            class="flex items-center gap-2 px-3 py-2 text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] border border-[var(--ui-border)] rounded-lg hover:bg-[var(--ui-bg-muted)] transition-all duration-200"
-                        >
+                        <button @click="navigateToVersionDiff"
+                            class="flex items-center gap-2 px-3 py-2 text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] border border-[var(--ui-border)] rounded-lg hover:bg-[var(--ui-bg-muted)] transition-all duration-200">
                             <Icon icon="material-symbols:compare-arrows" width="16" height="16" />
                             <span class="text-sm font-medium">차이점 보기</span>
                         </button>
-                        <button 
-                            @click="revertToVersion"
-                            class="flex items-center gap-2 px-3 py-2 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-800 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-all duration-200"
-                        >
+                        <button @click="revertToVersion"
+                            class="flex items-center gap-2 px-3 py-2 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-800 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-all duration-200">
                             <Icon icon="ic:round-restore" width="16" height="16" />
                             <span class="text-sm font-medium">되돌리기</span>
                         </button>
@@ -192,14 +187,10 @@ const historyData = computed(() => response.value?.data)
                                 getChangeTypeStyle(historyData.changeType).border,
                                 'border'
                             ]">
-                                <Icon 
-                                    :icon="getChangeTypeStyle(historyData.changeType).icon" 
-                                    :class="getChangeTypeStyle(historyData.changeType).color"
-                                    width="24" 
-                                    height="24"
-                                />
+                                <Icon :icon="getChangeTypeStyle(historyData.changeType).icon"
+                                    :class="getChangeTypeStyle(historyData.changeType).color" width="24" height="24" />
                             </div>
-                            
+
                             <div class="flex-1 min-w-0">
                                 <h1 class="text-2xl font-bold text-[var(--ui-text-highlighted)] mb-2">
                                     {{ historyData.title }}
@@ -212,58 +203,77 @@ const historyData = computed(() => response.value?.data)
                                     ]">
                                         {{ getChangeTypeStyle(historyData.changeType).label }}
                                     </span>
-                                    <span class="inline-flex items-center px-3 py-1 text-sm bg-[var(--ui-bg-muted)] text-[var(--ui-text)] rounded-full">
+                                    <span
+                                        class="inline-flex items-center px-3 py-1 text-sm bg-[var(--ui-bg-muted)] text-[var(--ui-text)] rounded-full">
                                         버전 {{ historyData.version }}
                                     </span>
                                     <!-- 마이너 수정 표시 -->
-                                    <span v-if="historyData.isMinor" class="inline-flex items-center px-3 py-1 text-sm bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 rounded-full">
+                                    <span v-if="historyData.isMinor"
+                                        class="inline-flex items-center px-3 py-1 text-sm bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 rounded-full">
                                         사소한 수정
                                     </span>
                                 </div>
-                                
+
                                 <!-- 변경 메시지 -->
                                 <div v-if="historyData.changeMessage" class="mb-4">
-                                    <div class="p-4 bg-[var(--ui-bg-muted)] rounded-lg border-l-4 border-[var(--ui-primary)]">
-                                        <p class="text-sm text-[var(--ui-text)] leading-relaxed">{{ historyData.changeMessage }}</p>
+                                    <div
+                                        class="p-4 bg-[var(--ui-bg-muted)] rounded-lg border-l-4 border-[var(--ui-primary)]">
+                                        <p class="text-sm text-[var(--ui-text)] leading-relaxed">{{
+                                            historyData.changeMessage }}</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- 메타데이터 그리드 -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-[var(--ui-bg-muted)] rounded-lg">
+                        <div
+                            class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-[var(--ui-bg-muted)] rounded-lg">
                             <!-- 작성자 정보 -->
                             <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 bg-[var(--ui-primary)]/10 rounded-lg flex items-center justify-center">
-                                    <Icon icon="material-symbols:person-outline" class="text-[var(--ui-primary)]" width="16" height="16" />
+                                <div
+                                    class="w-8 h-8 bg-[var(--ui-primary)]/10 rounded-lg flex items-center justify-center">
+                                    <Icon icon="material-symbols:person-outline" class="text-[var(--ui-primary)]"
+                                        width="16" height="16" />
                                 </div>
                                 <div class="min-w-0">
-                                    <div class="text-xs font-medium text-[var(--ui-text-muted)] uppercase tracking-wide">작성자</div>
+                                    <div
+                                        class="text-xs font-medium text-[var(--ui-text-muted)] uppercase tracking-wide">
+                                        작성자</div>
                                     <div class="flex items-center gap-2">
                                         <ProfileBadge :id="historyData.changedBy" class="w-4 h-4" />
-                                        <span class="text-sm font-medium text-[var(--ui-text)] truncate">{{ historyData.changedByName }}</span>
+                                        <span class="text-sm font-medium text-[var(--ui-text)] truncate">{{
+                                            historyData.changedByName }}</span>
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <!-- 변경 시간 -->
                             <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 bg-[var(--ui-primary)]/10 rounded-lg flex items-center justify-center">
-                                    <Icon icon="material-symbols:schedule-outline" class="text-[var(--ui-primary)]" width="16" height="16" />
+                                <div
+                                    class="w-8 h-8 bg-[var(--ui-primary)]/10 rounded-lg flex items-center justify-center">
+                                    <Icon icon="material-symbols:schedule-outline" class="text-[var(--ui-primary)]"
+                                        width="16" height="16" />
                                 </div>
                                 <div class="min-w-0">
-                                    <div class="text-xs font-medium text-[var(--ui-text-muted)] uppercase tracking-wide">시간</div>
-                                    <div class="text-sm font-medium text-[var(--ui-text)]">{{ getRelativeTime(historyData.changedAt) }}</div>
+                                    <div
+                                        class="text-xs font-medium text-[var(--ui-text-muted)] uppercase tracking-wide">
+                                        시간</div>
+                                    <div class="text-sm font-medium text-[var(--ui-text)]">{{
+                                        getRelativeTime(historyData.changedAt) }}</div>
                                 </div>
                             </div>
-                            
+
                             <!-- 변경량 -->
                             <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 bg-[var(--ui-primary)]/10 rounded-lg flex items-center justify-center">
-                                    <Icon icon="material-symbols:trending-up" class="text-[var(--ui-primary)]" width="16" height="16" />
+                                <div
+                                    class="w-8 h-8 bg-[var(--ui-primary)]/10 rounded-lg flex items-center justify-center">
+                                    <Icon icon="material-symbols:trending-up" class="text-[var(--ui-primary)]"
+                                        width="16" height="16" />
                                 </div>
                                 <div class="min-w-0">
-                                    <div class="text-xs font-medium text-[var(--ui-text-muted)] uppercase tracking-wide">변경량</div>
+                                    <div
+                                        class="text-xs font-medium text-[var(--ui-text-muted)] uppercase tracking-wide">
+                                        변경량</div>
                                     <div class="flex items-center gap-1">
                                         <span :class="[
                                             'text-sm font-mono font-medium',
@@ -273,21 +283,29 @@ const historyData = computed(() => response.value?.data)
                                                 ? 'text-[var(--ui-text-muted)]'
                                                 : 'text-red-600 dark:text-red-400'
                                         ]">
-                                            {{ getChangeAmount(historyData.addedCharacters, historyData.removedCharacters).net >= 0 ? '+' : '' }}{{ getChangeAmount(historyData.addedCharacters, historyData.removedCharacters).net }}
+                                            {{ getChangeAmount(historyData.addedCharacters,
+                                            historyData.removedCharacters).net >= 0 ? '+' : '' }}{{
+                                            getChangeAmount(historyData.addedCharacters,
+                                            historyData.removedCharacters).net }}
                                         </span>
                                         <span class="text-xs text-[var(--ui-text-muted)]">문자</span>
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <!-- 파일 크기 -->
                             <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 bg-[var(--ui-primary)]/10 rounded-lg flex items-center justify-center">
-                                    <Icon icon="material-symbols:description-outline" class="text-[var(--ui-primary)]" width="16" height="16" />
+                                <div
+                                    class="w-8 h-8 bg-[var(--ui-primary)]/10 rounded-lg flex items-center justify-center">
+                                    <Icon icon="material-symbols:description-outline" class="text-[var(--ui-primary)]"
+                                        width="16" height="16" />
                                 </div>
                                 <div class="min-w-0">
-                                    <div class="text-xs font-medium text-[var(--ui-text-muted)] uppercase tracking-wide">크기</div>
-                                    <div class="text-sm font-medium text-[var(--ui-text)]">{{ formatFileSize(historyData.contentSize) }}</div>
+                                    <div
+                                        class="text-xs font-medium text-[var(--ui-text-muted)] uppercase tracking-wide">
+                                        크기</div>
+                                    <div class="text-sm font-medium text-[var(--ui-text)]">{{
+                                        formatFileSize(historyData.contentSize) }}</div>
                                 </div>
                             </div>
                         </div>
@@ -296,15 +314,14 @@ const historyData = computed(() => response.value?.data)
                         <div class="mt-4 space-y-3">
                             <!-- 태그 -->
                             <div v-if="historyData.tags && historyData.tags.length > 0" class="flex items-center gap-3">
-                                <div class="w-8 h-8 bg-[var(--ui-primary)]/10 rounded-lg flex items-center justify-center">
-                                    <Icon icon="material-symbols:tag" class="text-[var(--ui-primary)]" width="16" height="16" />
+                                <div
+                                    class="w-8 h-8 bg-[var(--ui-primary)]/10 rounded-lg flex items-center justify-center">
+                                    <Icon icon="material-symbols:tag" class="text-[var(--ui-primary)]" width="16"
+                                        height="16" />
                                 </div>
                                 <div class="flex gap-2 flex-wrap">
-                                    <span 
-                                        v-for="tag in historyData.tags" 
-                                        :key="tag"
-                                        class="inline-flex items-center px-3 py-1 text-sm bg-[var(--ui-primary)] text-white rounded-full"
-                                    >
+                                    <span v-for="tag in historyData.tags" :key="tag"
+                                        class="inline-flex items-center px-3 py-1 text-sm bg-[var(--ui-primary)] text-white rounded-full">
                                         {{ tag }}
                                     </span>
                                 </div>
@@ -312,18 +329,24 @@ const historyData = computed(() => response.value?.data)
 
                             <!-- 이전 버전 정보 -->
                             <div v-if="historyData.previousVersion" class="flex items-center gap-3">
-                                <div class="w-8 h-8 bg-[var(--ui-primary)]/10 rounded-lg flex items-center justify-center">
-                                    <Icon icon="material-symbols:arrow-back" class="text-[var(--ui-primary)]" width="16" height="16" />
+                                <div
+                                    class="w-8 h-8 bg-[var(--ui-primary)]/10 rounded-lg flex items-center justify-center">
+                                    <Icon icon="material-symbols:arrow-back" class="text-[var(--ui-primary)]" width="16"
+                                        height="16" />
                                 </div>
-                                <span class="text-sm text-[var(--ui-text-muted)]">이전 버전: v{{ historyData.previousVersion }}</span>
+                                <span class="text-sm text-[var(--ui-text-muted)]">이전 버전: v{{ historyData.previousVersion
+                                    }}</span>
                             </div>
 
                             <!-- 해시 정보 -->
                             <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 bg-[var(--ui-primary)]/10 rounded-lg flex items-center justify-center">
-                                    <Icon icon="material-symbols:fingerprint" class="text-[var(--ui-primary)]" width="16" height="16" />
+                                <div
+                                    class="w-8 h-8 bg-[var(--ui-primary)]/10 rounded-lg flex items-center justify-center">
+                                    <Icon icon="material-symbols:fingerprint" class="text-[var(--ui-primary)]"
+                                        width="16" height="16" />
                                 </div>
-                                <span class="text-sm font-mono text-[var(--ui-text-muted)] break-all">{{ historyData.contentHash }}</span>
+                                <span class="text-sm font-mono text-[var(--ui-text-muted)] break-all">{{
+                                    historyData.contentHash }}</span>
                             </div>
                         </div>
                     </div>
@@ -334,10 +357,13 @@ const historyData = computed(() => response.value?.data)
             <div class="bg-[var(--ui-bg)] border border-[var(--ui-border)] rounded-xl shadow-sm overflow-hidden">
                 <div v-if="historyData" class="p-6">
                     <!-- 버전 표시 배너 -->
-                    <div class="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+                    <div
+                        class="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
                         <div class="flex items-center gap-3 mb-3">
-                            <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/40 rounded-lg flex items-center justify-center">
-                                <Icon icon="material-symbols:history" class="text-blue-600 dark:text-blue-500" width="20" height="20" />
+                            <div
+                                class="w-10 h-10 bg-blue-100 dark:bg-blue-900/40 rounded-lg flex items-center justify-center">
+                                <Icon icon="material-symbols:history" class="text-blue-600 dark:text-blue-500"
+                                    width="20" height="20" />
                             </div>
                             <div class="flex-1">
                                 <p class="text-sm font-medium text-blue-700 dark:text-blue-600">
@@ -349,17 +375,13 @@ const historyData = computed(() => response.value?.data)
                             </div>
                         </div>
                         <div class="flex flex-wrap gap-2">
-                            <button 
-                                @click="navigateToCurrentPage"
-                                class="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 dark:bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors duration-200"
-                            >
+                            <button @click="navigateToCurrentPage"
+                                class="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 dark:bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors duration-200">
                                 <Icon icon="material-symbols:visibility" width="16" height="16" />
                                 최신 버전 보기
                             </button>
-                            <button 
-                                @click="navigateToEdit"
-                                class="inline-flex items-center gap-2 px-3 py-1.5 bg-[var(--ui-bg)] border border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 text-sm rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors duration-200"
-                            >
+                            <button @click="navigateToEdit"
+                                class="inline-flex items-center gap-2 px-3 py-1.5 bg-[var(--ui-bg)] border border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 text-sm rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors duration-200">
                                 <Icon icon="material-symbols:edit" width="16" height="16" />
                                 편집하기
                             </button>
@@ -367,11 +389,10 @@ const historyData = computed(() => response.value?.data)
                     </div>
 
                     <!-- 마크다운 컨텐츠 -->
-                    <div class="prose prose-sm sm:prose lg:prose-lg xl:prose-xl max-w-none">
-                        <MdPreview :modelValue="historyData.content" class="break-words max-w-none" />
-                    </div>
+                    <MdPreview :modelValue="historyData.content"
+                        class="break-words max-w-none prose md:prose-base prose-sm prose-zinc dark:prose-invert" />
                 </div>
-                
+
                 <!-- 로딩 상태 -->
                 <div v-else class="p-6">
                     <div class="animate-pulse space-y-4">

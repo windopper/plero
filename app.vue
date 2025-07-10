@@ -16,6 +16,8 @@ import Footer from './components/common/Footer.vue'
 
 <style>
 @import 'tailwindcss';
+@import './assets/css/main.css';
+@custom-variant dark (&:where(.dark, .dark *));
 
 * {
   /* transition: all 0.15s ease; */

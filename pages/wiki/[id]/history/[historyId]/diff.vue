@@ -116,6 +116,7 @@ const navigateToVersion = () => {
 
 <style scoped>
 @reference '~/assets/css/main.css';
+
 .diff-line {
     @apply flex bg-[var(--ui-bg-muted)] border border-[var(--ui-border-muted)] rounded-lg overflow-hidden;
 }
