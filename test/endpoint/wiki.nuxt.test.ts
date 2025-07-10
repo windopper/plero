@@ -244,7 +244,24 @@ describe('Wiki API 엔드포인트 테스트', async () => {
       expect(updateResponse.data).toHaveProperty('title', wikiUpdateData.title)
       expect(updateResponse.data).toHaveProperty('content', wikiUpdateData.content)
       expect(updateResponse.data).toHaveProperty('updateMessage', wikiUpdateData.updateMessage)
-      
+    })
+
+    it("위키 수정 시에 제목, 내용, 수정 메시지가 없을 때 400 에러를 반환해야 함", async () => {
+      const wikiData = {
+        title: "테스트 위키",
+        content: "테스트 위키 내용입니다.",
+      };
+
+      await expect($fetch("/api/wiki/nonexistent-id", {
+        method: "PATCH" as any,
+        body: wikiData,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })).rejects.toMatchObject({
+        statusCode: 400,
+        statusMessage: 'Invalid request'
+      })
     })
   })
 })

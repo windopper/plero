@@ -29,6 +29,7 @@ describe("wiki CRUD", () => {
             createdAt: Date.now(),
             updatedAt: Date.now(),
             version: 1,
+            latestVersion: 1,
             isPublished: true,
             tags: ['test'],
         };

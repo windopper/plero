@@ -22,7 +22,7 @@ describe("wiki history CRUD", () => {
             changedByName: 'test',
             changedByEmail: 'test@example.com',
             changedAt: Date.now(),
-            previousVersion: 0,
+            previousVersion: null,
             parentVersions: [],
             contentSize: 4, // 'test'.length
             contentHash: 'test',
@@ -30,6 +30,8 @@ describe("wiki history CRUD", () => {
             version: 1,
             tags: [],
             metadata: {},
+            addedCharacters: 4,
+            removedCharacters: 0,
         };
 
         return { testWikiId, testUserId, mockWiki };

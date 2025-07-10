@@ -15,11 +15,19 @@ export async function getWikiContributorsByWikiId(wikiId: string): Promise<DbRes
       error: { message: "Wiki contributor not found" },
     };
   }
+  
+  const list = []
+  for (const doc of docs.docs) {
+    const result = WIKI_CONTRIBUTORS_SCHEMA.safeParse(doc.data());
+    if (result.success) {
+      list.push(result.data);
+    } else {
+      console.log(result.error);
+    }
+  }
   return {
     success: true,
-    data: docs.docs
-      .map((doc) => WIKI_CONTRIBUTORS_SCHEMA.safeParse(doc.data()).data)
-      .filter((data): data is WikiContributor => data !== undefined),
+    data: list,
   };
 }
 

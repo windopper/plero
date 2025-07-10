@@ -18,7 +18,11 @@ import Footer from './components/common/Footer.vue'
 @import 'tailwindcss';
 
 * {
-  transition: all 0.15s ease;
+  /* transition: all 0.15s ease; */
+}
+
+html {
+  overflow-x: hidden;
 }
 
 body {

@@ -1,0 +1,296 @@
+# Plero 프로젝트 디자인 시스템
+
+## 🎨 색상 팔레트
+
+### CSS 변수 사용 (assets/css/main.css 기준)
+```css
+/* 텍스트 색상 */
+--ui-text-dimmed: var(--color-neutral-400);     /* 희미한 텍스트 */
+--ui-text-muted: var(--color-neutral-500);      /* 보조 텍스트 */
+--ui-text-toned: var(--color-neutral-600);      /* 톤 다운된 텍스트 */
+--ui-text: var(--color-neutral-700);            /* 기본 텍스트 */
+--ui-text-highlighted: var(--color-neutral-900); /* 강조 텍스트 */
+--ui-text-inverted: var(--color-white);         /* 반전 텍스트 */
+
+/* 배경 색상 */
+--ui-bg: var(--color-white);                    /* 기본 배경 */
+--ui-bg-muted: var(--color-neutral-50);         /* 보조 배경 */
+--ui-bg-elevated: var(--color-neutral-100);     /* 부각된 배경 */
+--ui-bg-accented: var(--color-neutral-200);     /* 강조된 배경 */
+--ui-bg-inverted: var(--color-neutral-900);     /* 반전 배경 */
+
+/* 테두리 색상 */
+--ui-border: var(--color-neutral-200);          /* 기본 테두리 */
+--ui-border-muted: var(--color-neutral-200);    /* 보조 테두리 */
+--ui-border-accented: var(--color-neutral-300); /* 강조된 테두리 */
+--ui-border-inverted: var(--color-neutral-900); /* 반전 테두리 */
+
+/* 프라이머리 색상 */
+--ui-primary: var(--color-indigo-400);          /* 기본 프라이머리 */
+--ui-primary-muted: var(--color-indigo-500);    /* 보조 프라이머리 */
+--ui-primary-elevated: var(--color-indigo-600); /* 부각된 프라이머리 */
+--ui-primary-accented: var(--color-indigo-700); /* 강조된 프라이머리 */
+--ui-primary-inverted: var(--color-indigo-800); /* 반전 프라이머리 */
+```
+
+### 사용 방법
+```css
+/* 올바른 방법 */
+color: var(--ui-text);
+background: var(--ui-bg-muted);
+
+/* 피해야 할 방법 */
+color: #374151;
+background: #f9fafb;
+```
+
+## 🏗️ 레이아웃 패턴
+
+### 1. 페이지 기본 구조
+```vue
+<template>
+    <div class="min-h-screen bg-[var(--ui-bg)]">
+        <!-- 상단 헤더 (고정) -->
+        <div class="sticky top-0 z-10 bg-[var(--ui-bg)] border-b-[1px] border-[var(--ui-border)] shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <!-- 헤더 내용 -->
+            </div>
+        </div>
+
+        <!-- 메인 컨텐츠 -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <!-- 콘텐츠 -->
+        </div>
+    </div>
+</template>
+```
+
+### 2. 헤더 패턴
+```vue
+<div class="flex justify-between items-center py-4 flex-wrap gap-4">
+    <!-- 왼쪽: 브레드크럼/네비게이션 -->
+    <div class="flex items-center gap-2 text-sm">
+        <button class="flex items-center gap-2 text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors duration-200 group">
+            <Icon icon="material-symbols:arrow-back" width="20" height="20" class="group-hover:scale-110 transition-transform duration-200" />
+            <span class="font-medium">뒤로가기</span>
+        </button>
+        <div class="ml-2 h-6 w-px bg-[var(--ui-border)]"></div>
+        <h1 class="ml-2 text-lg font-semibold text-[var(--ui-text)]">페이지 제목</h1>
+    </div>
+    
+    <!-- 오른쪽: 액션 버튼들 -->
+    <div class="flex items-center gap-3">
+        <!-- 버튼들 -->
+    </div>
+</div>
+```
+
+### 3. 카드 컴포넌트
+```vue
+<div class="bg-[var(--ui-bg)] border border-[var(--ui-border)] rounded-xl shadow-sm overflow-hidden">
+    <!-- 카드 헤더 (선택사항) -->
+    <div class="px-6 py-4 border-b border-[var(--ui-border)] bg-[var(--ui-bg-muted)]">
+        <h2 class="text-lg font-semibold text-[var(--ui-text-highlighted)]">카드 제목</h2>
+    </div>
+    
+    <!-- 카드 내용 -->
+    <div class="p-6">
+        <!-- 콘텐츠 -->
+    </div>
+</div>
+```
+
+## 🔘 버튼 패턴
+
+### 1. 프라이머리 버튼 (강조 액션)
+```vue
+<button class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[var(--ui-primary)] to-[var(--ui-primary-muted)] text-white rounded-lg hover:from-[var(--ui-primary-muted)] hover:to-[var(--ui-primary-elevated)] transition-all duration-200 shadow-md hover:shadow-lg">
+    <Icon icon="material-symbols:save" width="16" height="16" />
+    <span class="text-sm font-medium">저장</span>
+</button>
+```
+
+### 2. 세컨더리 버튼 (보조 액션)
+```vue
+<button class="flex items-center gap-2 px-3 py-2 text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] border border-[var(--ui-border)] rounded-lg hover:bg-[var(--ui-bg-muted)] transition-all duration-200">
+    <Icon icon="material-symbols:edit" width="16" height="16" />
+    <span class="text-sm font-medium">편집</span>
+</button>
+```
+
+### 3. 위험 액션 버튼
+```vue
+<button class="flex items-center gap-2 px-3 py-2 text-[var(--ui-text-muted)] hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all duration-200">
+    <Icon icon="material-symbols:delete-outline" width="16" height="16" />
+    <span class="text-sm font-medium">삭제</span>
+</button>
+```
+
+## 🎯 아이콘 사용법
+
+### Iconify 사용
+```vue
+<script setup>
+import { Icon } from '@iconify/vue';
+</script>
+
+<template>
+    <!-- 기본 사용법 -->
+    <Icon icon="material-symbols:home-outline" width="20" height="20" />
+    
+    <!-- 호버 효과와 함께 -->
+    <Icon icon="material-symbols:arrow-back" width="20" height="20" class="group-hover:scale-110 transition-transform duration-200" />
+</template>
+```
+
+### 자주 사용하는 아이콘들
+- `material-symbols:arrow-back` - 뒤로가기
+- `material-symbols:edit` - 편집
+- `material-symbols:save` - 저장
+- `material-symbols:delete-outline` - 삭제
+- `material-symbols:history` - 변경 기록
+- `material-symbols:visibility` - 보기
+- `material-symbols:home-outline` - 홈
+- `material-symbols:add-circle-outline` - 추가
+- `material-symbols:check-circle-outline` - 완료/확인
+
+## 🌙 다크 모드 지원
+
+### CSS 변수 자동 변환
+다크 모드는 CSS 변수를 통해 자동으로 처리됩니다. `.dark` 클래스가 적용되면 색상이 자동으로 변경됩니다.
+
+### 특별한 처리가 필요한 경우
+```vue
+<style scoped>
+.my-element {
+    @apply bg-green-50 text-green-700;
+}
+
+/* 다크 모드 전용 스타일 */
+.dark .my-element {
+    @apply bg-green-900/20 text-green-300;
+}
+</style>
+```
+
+## 📱 반응형 디자인
+
+### 브레이크포인트 (Tailwind CSS 기준)
+- `sm:` - 640px 이상
+- `md:` - 768px 이상
+- `lg:` - 1024px 이상
+- `xl:` - 1280px 이상
+
+### 반응형 패턴 예시
+```vue
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+    <!-- 모바일: 1열, 데스크톱: 4열 -->
+</div>
+
+<div class="flex-col items-start gap-4 lg:flex-row lg:items-center">
+    <!-- 모바일: 세로 배치, 데스크톱: 가로 배치 -->
+</div>
+```
+
+## ✨ 애니메이션 및 트랜지션
+
+### 표준 트랜지션
+```css
+transition-colors duration-200   /* 색상 변화 */
+transition-all duration-200      /* 모든 속성 변화 */
+transition-transform duration-200 /* 변형 효과 */
+```
+
+### 호버 효과
+```vue
+<!-- 스케일 효과 -->
+<div class="group-hover:scale-110 transition-transform duration-200">
+
+<!-- 이동 효과 -->
+<div class="group-hover:translate-x-1 transition-transform duration-200">
+
+<!-- 색상 변화 -->
+<div class="hover:text-[var(--ui-text)] transition-colors duration-200">
+```
+
+## 🔤 타이포그래피
+
+### 제목 크기
+```vue
+<h1 class="text-3xl font-bold text-[var(--ui-text-highlighted)]">    <!-- 메인 제목 -->
+<h2 class="text-2xl font-bold text-[var(--ui-text-highlighted)]">    <!-- 섹션 제목 -->
+<h3 class="text-lg font-semibold text-[var(--ui-text)]">             <!-- 서브 제목 -->
+<h4 class="text-sm font-semibold text-[var(--ui-text)]">             <!-- 작은 제목 -->
+```
+
+### 본문 텍스트
+```vue
+<p class="text-[var(--ui-text)]">                    <!-- 기본 텍스트 -->
+<span class="text-[var(--ui-text-muted)]">           <!-- 보조 텍스트 -->
+<small class="text-xs text-[var(--ui-text-muted)]">  <!-- 작은 텍스트 -->
+```
+
+## 🗂️ 코드 및 diff 스타일
+
+### 모노스페이스 폰트
+```vue
+<div class="font-mono text-sm">
+    <!-- 코드 내용 -->
+</div>
+```
+
+### Diff 색상
+```vue
+<!-- 추가된 내용 -->
+<span class="bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-300 px-1 rounded">
+
+<!-- 제거된 내용 -->
+<span class="bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300 px-1 rounded line-through">
+```
+
+## 📏 간격 및 패딩
+
+### 표준 간격
+- `gap-2` (8px) - 작은 요소 간격
+- `gap-3` (12px) - 버튼 그룹 간격  
+- `gap-4` (16px) - 일반적인 간격
+- `gap-6` (24px) - 섹션 간격
+
+### 패딩
+- `p-4` (16px) - 작은 카드 패딩
+- `p-6` (24px) - 일반적인 카드 패딩
+- `px-4 py-2` - 버튼 패딩
+- `px-6 py-4` - 카드 헤더 패딩
+
+## 🎛️ 상태 표시
+
+### 로딩 상태
+```vue
+<Icon v-if="loading" icon="line-md:loading-loop" width="18" height="18" />
+```
+
+### 빈 상태
+```vue
+<div class="text-center py-12">
+    <Icon icon="material-symbols:check-circle-outline" width="48" height="48" class="mx-auto text-[var(--ui-text-muted)] mb-4" />
+    <h3 class="text-lg font-medium text-[var(--ui-text)] mb-2">데이터 없음</h3>
+    <p class="text-[var(--ui-text-muted)]">표시할 내용이 없습니다.</p>
+</div>
+```
+
+## ✅ 체크리스트
+
+새로운 컴포넌트나 페이지를 만들 때 확인사항:
+
+- [ ] CSS 변수 사용 (`var(--ui-*)`)
+- [ ] Iconify 아이콘 사용 (`@iconify/vue`)
+- [ ] 표준 레이아웃 패턴 적용
+- [ ] 반응형 디자인 고려
+- [ ] 다크 모드 지원
+- [ ] 적절한 트랜지션 효과
+- [ ] 일관된 간격 및 패딩
+- [ ] 접근성 고려 (키보드 네비게이션, 스크린 리더 등)
+description:
+globs:
+alwaysApply: true
+---

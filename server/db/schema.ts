@@ -32,6 +32,7 @@ export const WIKI_SCHEMA = z.object({
     createdAt: z.number(), // 생성 시간 (timestamp)
     updatedAt: z.number(), // 마지막 수정 시간 (timestamp)
     version: z.number().int().positive(), // 현재 버전 번호
+    latestVersion: z.number().int().positive().default(0), // 최신 버전 번호
     authorId: z.string(), // 생성자 고유 ID
     authorName: z.string(), // 생성자 이름
     authorEmail: z.string().email(), // 생성자 이메일
@@ -50,8 +51,8 @@ export const WIKI_CONTRIBUTORS_SCHEMA = z.object({
     contributorName: z.string(), // 기여자 이름
     contributorEmail: z.string().email(), // 기여자 이메일
     contributedAt: z.number(), // 기여 시간 (timestamp)
-    linesAdded: z.number().int().min(0).default(0), // 추가된 라인 수
-    linesRemoved: z.number().int().min(0).default(0), // 삭제된 라인 수
+    linesAdded: z.number().int().default(0), // 추가된 라인 수
+    linesRemoved: z.number().int().default(0), // 삭제된 라인 수
 })
 
 // 히스토리 스키마 - Full Snapshot 방식으로 각 버전의 전체 내용 저장
@@ -74,10 +75,12 @@ export const WIKI_HISTORY_SCHEMA = z.object({
     changedByName: z.string(), // 변경자 이름
     changedByEmail: z.string().email(), // 변경자 이메일
     changedAt: z.number(), // 변경 시간 (timestamp)
-    previousVersion: z.number().int().optional(), // 이전 버전 (되돌리기 추적용)
-    parentVersions: z.array(z.number().int()).default([]), // 부모 버전들 (merge 지원)
+    previousVersion: z.string().uuid().nullable(), // 이전 버전 (되돌리기 추적용)
+    parentVersions: z.array(z.string().uuid()).default([]), // 부모 버전들 (merge 지원)
     contentSize: z.number().int().min(0), // 내용 크기 (통계/최적화용)
     contentHash: z.string(), // 내용 해시 (중복 제거/무결성 검증용)
+    addedCharacters: z.number().int().min(0).default(0), // 추가된 문자 수
+    removedCharacters: z.number().int().min(0).default(0), // 삭제된 문자 수
     isMinor: z.boolean().default(false), // 사소한 수정 여부
     tags: z.array(z.string()).default([]), // 해당 버전의 태그
     metadata: z.record(z.string(), z.any()).optional(), // 추가 메타데이터

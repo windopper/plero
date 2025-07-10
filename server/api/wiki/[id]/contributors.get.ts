@@ -1,5 +1,4 @@
-import { _permanantDeleteWikiService } from "~/server/service/wiki"
-import { requireUserSessionForTest } from "../../utils/testAuth"
+import { getWikiContributorsByWikiId } from "~/server/db/wikiContributor";
 
 export default defineEventHandler(async (event) => {
     const { id } = getRouterParams(event) as { id: string }
@@ -10,14 +9,14 @@ export default defineEventHandler(async (event) => {
         })
     }
 
-    await requireUserSessionForTest(event)
+    const result = await getWikiContributorsByWikiId(id);
 
-    const result = await _permanantDeleteWikiService(id)
     if (!result.success) {
         throw createError({
             statusCode: 500,
             statusMessage: "Internal server error"
         })
     }
+
     return result
 })

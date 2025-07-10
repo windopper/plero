@@ -1,0 +1,7 @@
+---
+alwaysApply: true
+---
+
+# 디자인 규칙
+assets/css/main.css의 팔레트를 참고하여 색상을 사용하세요.
+icon은 Iconify를 사용하세요.

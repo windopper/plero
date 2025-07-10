@@ -42,10 +42,5 @@ export const requireUserSessionForTest = async (event: H3Event) => {
     }
   }
   
-  // 일반 환경에서는 사용자 세션 처리를 구현해야 함
-  // 현재는 테스트용으로만 사용하므로 테스트 환경이 아니면 에러
-  throw createError({
-    statusCode: 401,
-    statusMessage: 'Unauthorized'
-  })
+  return requireUserSession(event)
 } 

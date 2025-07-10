@@ -47,10 +47,10 @@ export function getChangedLineFromDiff(
   for (const part of diff) {
     // 줄바꿈 문자가 포함되어 있으면 다음 줄로 이동
     if (part.value.includes("\n")) {
-      if (newChangeObjects.length > 0) {
+      if (isLineChanged) {
         changedLines.push({ line: lineCount, diff: newChangeObjects });
         newChangeObjects = [];
-    }
+      }
       lineCount++;
       isLineChanged = false; // 새로운 줄이므로 변경 플래그 초기화
     }
@@ -58,13 +58,12 @@ export function getChangedLineFromDiff(
     if (part.added || part.removed) {
       isLineChanged = true; // 현재 줄에 변경사항이 있음을 표시
     }
-    // 현재 줄에 변경사항이 있다면 해당 part를 결과 배열에 추가
-    if (isLineChanged) {
-      newChangeObjects.push(part);
-    }
+    newChangeObjects.push(part);
   }
 
-  changedLines.push({ line: lineCount, diff: newChangeObjects });
+  if (isLineChanged) {
+    changedLines.push({ line: lineCount, diff: newChangeObjects });
+  }
 
   return changedLines;
 }
