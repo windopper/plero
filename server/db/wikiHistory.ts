@@ -39,7 +39,7 @@ export async function getWikiHistoriesByWikiId(
       data: histories.map((history) => history.data) as WikiHistory[],
     };
   } else {
-    return { success: false, error: { message: "Wiki history not found" } };
+    return { success: true, data: [] };
   }
 }
 

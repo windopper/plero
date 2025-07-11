@@ -85,6 +85,7 @@ export async function createWikiService(
     contributorName: data.author.name,
     contributorEmail: data.author.email,
     contributedAt: Date.now(),
+    firstContributedAt: Date.now(),
     linesAdded: added,
     linesRemoved: removed,
   };
@@ -186,6 +187,7 @@ export async function updateWikiService(wikiId: string, data: WikiUpdate): Promi
             contributorName: data.author.name,
             contributorEmail: data.author.email,
             contributedAt: Date.now(),
+            firstContributedAt: Date.now(),
             linesAdded: added,
             linesRemoved: removed,
         });
@@ -196,11 +198,10 @@ export async function updateWikiService(wikiId: string, data: WikiUpdate): Promi
     }
 
     // 4. 위키 참여자 업데이트
-    // TODO linesAdded, linesRemoved 계산 방법 수정 필요
     const updateContributorResult = await updateWikiContributor(contributor.id, {
         contributedAt: Date.now(),
-        linesAdded: getWikiContentSize(data.content) - getWikiContentSize(previousWiki.content),
-        linesRemoved: getWikiContentSize(previousWiki.content) - getWikiContentSize(data.content),
+        linesAdded: contributor.linesAdded + added,
+        linesRemoved: contributor.linesRemoved + removed,
     });
     if (!updateContributorResult.success) {
         return updateContributorResult;
@@ -299,6 +300,7 @@ export async function deleteWikiService(wikiId: string, data: WikiDelete): Promi
             contributorName: data.author.name,
             contributorEmail: data.author.email,
             contributedAt: Date.now(),
+            firstContributedAt: Date.now(),
             linesAdded: added,
             linesRemoved: removed,
         });
@@ -405,6 +407,7 @@ export async function revertWikiService(data: WikiRevert): Promise<DbResult<{
             contributorName: user.name,
             contributorEmail: user.email,
             contributedAt: Date.now(),
+            firstContributedAt: Date.now(),
             linesAdded: history.data.addedCharacters,
             linesRemoved: history.data.removedCharacters,
         });

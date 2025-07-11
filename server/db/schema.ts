@@ -32,7 +32,7 @@ export const WIKI_SCHEMA = z.object({
     createdAt: z.number(), // 생성 시간 (timestamp)
     updatedAt: z.number(), // 마지막 수정 시간 (timestamp)
     version: z.number().int().positive(), // 현재 버전 번호
-    latestVersion: z.number().int().positive().default(0), // 최신 버전 번호
+    latestVersion: z.number().int().default(0), // 최신 버전 번호
     authorId: z.string(), // 생성자 고유 ID
     authorName: z.string(), // 생성자 이름
     authorEmail: z.string().email(), // 생성자 이메일
@@ -51,6 +51,7 @@ export const WIKI_CONTRIBUTORS_SCHEMA = z.object({
     contributorName: z.string(), // 기여자 이름
     contributorEmail: z.string().email(), // 기여자 이메일
     contributedAt: z.number(), // 기여 시간 (timestamp)
+    firstContributedAt: z.number().default(Date.now()), // 최초 기여 시간 (timestamp)
     linesAdded: z.number().int().default(0), // 추가된 라인 수
     linesRemoved: z.number().int().default(0), // 삭제된 라인 수
 })

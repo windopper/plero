@@ -15,7 +15,6 @@ const latestUpdate = new Date(response.value.data.updatedAt).toLocaleString({
 })
 
 const { data: contributors } = await useFetch(`/api/wiki/${id}/contributors`)
-console.log(contributors.value.data)
 </script>
 
 <template>

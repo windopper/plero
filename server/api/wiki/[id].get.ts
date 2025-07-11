@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
     }
 
     const result = await getWiki(id);
-
+    
     if (!result.success) {
         if (result.error.message === "Wiki not found") {
             throw createError({

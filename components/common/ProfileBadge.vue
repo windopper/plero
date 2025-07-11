@@ -4,8 +4,11 @@ const props = defineProps<{
 }>()
 
 const { data: user } = await useFetch(`/api/user/${props.id}`)
+
+const emit = defineEmits(['mouseover', 'mouseleave'])
 </script>
 
 <template>
-    <img :src="user?.data?.avatar" class="rounded-full" />
+    <img :src="user?.data?.avatar" class="rounded-full" @mouseover="emit('mouseover')"
+        @mouseleave="emit('mouseleave')" />
 </template>

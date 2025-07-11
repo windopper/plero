@@ -3,10 +3,35 @@ import TablerSearch from '../icon/TablerSearch.vue';
 import { Icon } from '@iconify/vue';
 const isOpen = ref(false);
 const search = ref('');
-const { data: wikiList } = await useFetch('/api/wiki/list')
-const computedList = computed(() => {
-    return wikiList.value.filter(item => item.toLowerCase().includes(search.value.toLowerCase()));
+const debouncedSearch = ref('');
+
+// 디바운싱을 위한 타이머
+let debounceTimer = null;
+
+// search 값이 변경될 때마다 디바운싱 적용
+watch(search, (newVal) => {
+    // 기존 타이머가 있다면 클리어
+    if (debounceTimer) {
+        clearTimeout(debounceTimer);
+    }
+    
+    // 500ms 후에 debouncedSearch 업데이트
+    debounceTimer = setTimeout(() => {
+        debouncedSearch.value = newVal;
+    }, 500);
 });
+
+const { data: wikiListResponse } = await useFetch('/api/wiki/list', {
+    query: {
+        query: debouncedSearch,
+        page: 1,
+        limit: 10,
+    }
+})
+
+const wikiList = computed(() => {
+    return wikiListResponse.value?.data?.wikis || []
+})
 
 const createWiki = () => {
     navigateTo(`/wiki/${search.value}/edit`)
@@ -28,9 +53,9 @@ const createWiki = () => {
                         <input v-model="search" type="text" placeholder="Search" class="outline-none">
                     </div>
                     <div class="relative flex flex-col gap-2">
-                        <div v-if="computedList.length > 0" v-for="item in computedList" :key="item.id"
+                        <div v-if="wikiList.length > 0" v-for="item in wikiList" :key="item.id"
                             @click="isOpen = false" class="hover:bg-[var(--ui-bg-accented)] rounded-md cursor-pointer">
-                            <NuxtLink :to="`/wiki/${item}`" class="text-[var(--ui-text)] w-full block p-2">{{ item }}
+                            <NuxtLink :to="`/wiki/${item.id}`" class="text-[var(--ui-text)] w-full block p-2">{{ item.title }}
                             </NuxtLink>
                         </div>
                         <div v-else class="flex flex-col gap-2">

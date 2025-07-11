@@ -1,4 +1,4 @@
-import { getFirestore, doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
+import { getFirestore, doc, getDoc, setDoc, deleteDoc, Query, getDocs, collection, where, query, limit, startAfter, startAt, endAt, orderBy } from "firebase/firestore";
 import app from ".";
 import { WIKI_COLLECTION } from "./constants";
 import { Wiki, WIKI_SCHEMA } from "./schema";
@@ -14,7 +14,7 @@ export async function getWiki(id: string): Promise<DbResult<Wiki>> {
         if (result.success) {
             return { success: true, data: result.data };
         } else {
-            return { success: false, error: result.error };
+            return { success: false, error: { message: result.error.message } };
         }
     } else {
         return {
@@ -22,6 +22,41 @@ export async function getWiki(id: string): Promise<DbResult<Wiki>> {
             error: { message: "Wiki not found" },
         };
     }
+}
+
+export async function getWikiList(options: {query: string, page: number, limit: number}): Promise<DbResult<{wikis: Wiki[], totalCount: number, hasMore: boolean}>> {
+    const db = getFirestore(app);
+    const { query: searchQuery, page, limit: pageLimit } = options;
+    const actualLimit = pageLimit || 10;
+    
+    // 전체 위키 문서를 가져온 후 클라이언트 사이드에서 필터링
+    // Firestore는 전체 텍스트 검색을 지원하지 않으므로 이 방식을 사용
+    const allDocsQuery = query(
+      collection(db, WIKI_COLLECTION),
+      where('title', '>=', searchQuery),
+      where('title', '<=', searchQuery + "\uf8ff"),
+    );
+    const querySnapshot = await getDocs(allDocsQuery);
+    
+    let allWikis = querySnapshot.docs.map((doc) => doc.data() as Wiki);
+    
+    // 최신 순으로 정렬
+    allWikis.sort((a, b) => b.updatedAt - a.updatedAt);
+    
+    const totalCount = allWikis.length;
+    const startIndex = (page - 1) * actualLimit;
+    const endIndex = startIndex + actualLimit;
+    const wikis = allWikis.slice(startIndex, endIndex);
+    const hasMore = endIndex < totalCount;
+    
+    return { 
+        success: true, 
+        data: {
+            wikis,
+            totalCount,
+            hasMore
+        }
+    };
 }
 
 export async function setWiki(data: Omit<Wiki, 'id'>): Promise<DbResult<Wiki>> {

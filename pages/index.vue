@@ -14,9 +14,10 @@ import HorizontalDiagonalLine from '~/components/common/HorizontalDiagonalLine.v
             <button
                 class="bg-[var(--ui-primary)] text-[var(--ui-text-inverted)] px-4 py-2 rounded-md w-fit cursor-pointer"
                 @click="navigateTo('/wiki/create')">시작하기</button>
-            <button class="hover:bg-[var(--ui-bg-accented)] text-[var(--ui-text)] px-4 py-2 rounded-md w-fit cursor-pointer
-                border-[1px] border-[var(--ui-border)] hover:border-[var(--ui-border-accented)] transition-all duration-300
-                ">다른 위키
+            <button 
+                class="hover:bg-[var(--ui-bg-accented)] text-[var(--ui-text)] px-4 py-2 rounded-md w-fit cursor-pointer
+                border-[1px] border-[var(--ui-border)] hover:border-[var(--ui-border-accented)] transition-all duration-300"
+                @click="navigateTo('/wiki/list')">다른 위키
                 보러가기</button>
         </div>
         <HorizontalDiagonalLine />

@@ -8,6 +8,7 @@ const route = useRoute()
 const id = route.params.id
 const colorMode = useColorMode()
 const { data: response } = await useFetch(`/api/wiki/${id}`)
+
 const content = ref(response.value.data.content)
 const title = ref(response.value.data.title)
 

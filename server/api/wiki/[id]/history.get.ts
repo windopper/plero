@@ -10,6 +10,7 @@ export default defineEventHandler(async (event) => {
     }
 
     const result = await getWikiHistoriesByWikiId(id);
+    
     if (!result.success) {
         throw createError({
             statusCode: 500,

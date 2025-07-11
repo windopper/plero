@@ -35,10 +35,6 @@ const updateStarWithList = (item: string) => {
     }
 }
 
-watch(selectedStarList, (newVal) => {
-    console.log(newVal)
-})
-
 const starListRef = useTemplateRef('starListRef')
 const starListButtonRef = useTemplateRef('starListButtonRef')
 
