@@ -20,6 +20,7 @@ const loading = ref(false);
 const showCreateForm = ref(false);
 const newListName = ref('');
 const userDataLoaded = ref(false);
+const { loggedIn } = useUserSession();
 
 // 컨텍스트 메뉴 상태
 const showContextMenu = ref(false);
@@ -35,7 +36,7 @@ const starCountView = computed(() => {
 
 // 사용자 즐겨찾기 정보 로드 (클라이언트에서만 실행)
 const loadUserFavoritesData = async () => {
-    if (!props.wikiId || userDataLoaded.value) return;
+    if (!props.wikiId || userDataLoaded.value || !loggedIn.value) return;
     
     loading.value = true;
     try {
@@ -55,6 +56,9 @@ const loadUserFavoritesData = async () => {
 
 // 즐겨찾기 토글 (기본 목록에 추가/제거)
 const toggleFavorite = async () => {
+    if (openAuthorizePopupIfLoggedOutAndReturnTrue()) {
+        return
+    }
     if (loading.value) return;
     
     loading.value = true;

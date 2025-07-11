@@ -5,12 +5,13 @@ import { getContentDiff, getWikiContentHash, getWikiContentSize } from "../../ut
 import { deleteWikiContributor, deleteWikiContributorsByWikiId, getWikiContributor, getWikiContributorsByWikiId, setWikiContributor, updateWikiContributor } from "../db/wikiContributor";
 import type { DbResult } from "../type";
 
-export type WikiCreate = { title: string, content: string, author: User };
+export type WikiCreate = { title: string, content: string, tags: string[], author: User };
 export type WikiUpdate = {
   title: string;
   content: string;
   updateMessage: string;
   author: User;
+  tags: string[];
 };
 export type WikiDelete = { deleteMessage: string, author: User };
 export type WikiRevert = { author: User, revertHistoryId: string };
@@ -37,7 +38,7 @@ export async function createWikiService(
     createdAt: Date.now(),
     updatedAt: Date.now(),
     isPublished: false,
-    tags: [],
+    tags: data.tags,
     version: 1,
     latestVersion: 1,
   };
@@ -60,7 +61,9 @@ export async function createWikiService(
     title: data.title,
     content: data.content,
     version: 1,
-    tags: [],
+    tags: data.tags,
+    addedTags: data.tags,
+    removedTags: [],
     changedBy: data.author.id,
     changedByName: data.author.name,
     changedByEmail: data.author.email,
@@ -135,6 +138,7 @@ export async function updateWikiService(wikiId: string, data: WikiUpdate): Promi
         lastEditor: data.author.id,
         lastEditorName: data.author.name,
         lastEditorEmail: data.author.email,
+        tags: data.tags,
     });
     if (!updateWikiResult.success) {
         return updateWikiResult;
@@ -142,7 +146,6 @@ export async function updateWikiService(wikiId: string, data: WikiUpdate): Promi
     const updatedWiki = updateWikiResult.data;
 
     // 2. 위키 업데이트 이력 생성
-
     const { added, removed } = getContentDiff(previousWiki.content, data.content);
 
     const historyData: Omit<WikiHistory, "id"> = {
@@ -153,7 +156,9 @@ export async function updateWikiService(wikiId: string, data: WikiUpdate): Promi
         title: data.title,
         content: data.content,
         version: updatedWiki.version,
-        tags: updatedWiki.tags,
+        tags: updatedWiki.tags,   
+        addedTags: updatedWiki.tags.filter((tag) => !getWikiResult.data.tags.includes(tag)),
+        removedTags: getWikiResult.data.tags.filter((tag) => !updatedWiki.tags.includes(tag)),
         changedBy: data.author.id,
         changedByName: data.author.name,
         changedByEmail: data.author.email,
@@ -195,25 +200,25 @@ export async function updateWikiService(wikiId: string, data: WikiUpdate): Promi
             return setContributorResult;
         }
         contributor = setContributorResult.data;
+    } else {
+        // 4. 위키 참여자 업데이트
+        const updateContributorResult = await updateWikiContributor(contributor.id, {
+            contributedAt: Date.now(),
+            linesAdded: contributor.linesAdded + added,
+            linesRemoved: contributor.linesRemoved + removed,
+        });
+        if (!updateContributorResult.success) {
+            return updateContributorResult;
+        }
+        contributor = updateContributorResult.data;
     }
-
-    // 4. 위키 참여자 업데이트
-    const updateContributorResult = await updateWikiContributor(contributor.id, {
-        contributedAt: Date.now(),
-        linesAdded: contributor.linesAdded + added,
-        linesRemoved: contributor.linesRemoved + removed,
-    });
-    if (!updateContributorResult.success) {
-        return updateContributorResult;
-    }
-    const updatedContributor = updateContributorResult.data;
 
     return {
         success: true,
         data: {
             wiki: updatedWiki,
             history: history,
-            contributor: updatedContributor,
+            contributor: contributor,
         },
     };
 } 
@@ -274,6 +279,8 @@ export async function deleteWikiService(wikiId: string, data: WikiDelete): Promi
         parentVersions: [latestWikiHistory.data.id],
         version: updatedWiki.version,
         tags: [],
+        addedTags: [],
+        removedTags: previousWiki.data.tags,
         isMinor: false,
         previousVersion: previousWiki.data.id,
         metadata: {},
@@ -308,23 +315,23 @@ export async function deleteWikiService(wikiId: string, data: WikiDelete): Promi
             return setContributorResult;
         }
         contributor = setContributorResult.data;
+    } else {
+        // 4. 위키 참여자 업데이트
+        const updateContributorResult = await updateWikiContributor(contributor.id, {
+            contributedAt: Date.now(),
+            linesAdded: contributor.linesAdded + added,
+            linesRemoved: contributor.linesRemoved + removed,
+        });
+        if (!updateContributorResult.success) {
+            return updateContributorResult;
+        }
+        contributor = updateContributorResult.data;
     }
-
-    // 4. 위키 참여자 업데이트
-    const updateContributorResult = await updateWikiContributor(contributor.id, {
-        contributedAt: Date.now(),
-        linesAdded: added,
-        linesRemoved: removed,
-    });
-    if (!updateContributorResult.success) {
-        return updateContributorResult;
-    }
-    const updatedContributor = updateContributorResult.data;
 
     return { success: true, data: {
         wiki: updatedWiki,
         history: history,
-        contributor: updatedContributor,
+        contributor: contributor,
     } };
 }
 
@@ -343,6 +350,11 @@ export async function revertWikiService(data: WikiRevert): Promise<DbResult<{
     const currentWiki = await getWiki(history.data.wikiId);
     if (!currentWiki.success) {
         return currentWiki;
+    }
+
+    const latestWikiHistory = await getLatestWikiHistory(history.data.wikiId);
+    if (!latestWikiHistory.success) {
+        return latestWikiHistory;
     }
 
     // fallback
@@ -379,11 +391,13 @@ export async function revertWikiService(data: WikiRevert): Promise<DbResult<{
         content: history.data.content,
         version: history.data.version,
         tags: history.data.tags,
+        addedTags: history.data.tags.filter((tag) => !currentWiki.data.tags.includes(tag)),
+        removedTags: currentWiki.data.tags.filter((tag) => !history.data.tags.includes(tag)),
         changedBy: user.id,
         changedByName: user.name,
         changedByEmail: user.email,
-        previousVersion: history.data.id,
-        parentVersions: [history.data.id],
+        previousVersion: latestWikiHistory.data.id,
+        parentVersions: [latestWikiHistory.data.id],
         contentHash: history.data.contentHash,
         contentSize: history.data.contentSize,
         addedCharacters: added,
@@ -408,13 +422,23 @@ export async function revertWikiService(data: WikiRevert): Promise<DbResult<{
             contributorEmail: user.email,
             contributedAt: Date.now(),
             firstContributedAt: Date.now(),
-            linesAdded: history.data.addedCharacters,
-            linesRemoved: history.data.removedCharacters,
+            linesAdded: added,
+            linesRemoved: removed,
         });
         if (!setContributorResult.success) {
             return setContributorResult;
         }
         contributor = setContributorResult.data;
+    } else {
+        const updateContributorResult = await updateWikiContributor(contributor.id, {
+            contributedAt: Date.now(),
+            linesAdded: contributor.linesAdded + added,
+            linesRemoved: contributor.linesRemoved + removed,
+        });
+        if (!updateContributorResult.success) {
+            return updateContributorResult;
+        }
+        contributor = updateContributorResult.data;
     }
 
     return { success: true, data: {

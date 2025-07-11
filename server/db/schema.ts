@@ -84,6 +84,8 @@ export const WIKI_HISTORY_SCHEMA = z.object({
     removedCharacters: z.number().int().min(0).default(0), // 삭제된 문자 수
     isMinor: z.boolean().default(false), // 사소한 수정 여부
     tags: z.array(z.string()).default([]), // 해당 버전의 태그
+    addedTags: z.array(z.string()).default([]), // 추가된 태그
+    removedTags: z.array(z.string()).default([]), // 삭제된 태그
     metadata: z.record(z.string(), z.any()).optional(), // 추가 메타데이터
 })
 

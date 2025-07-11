@@ -4,7 +4,7 @@ import { requireUserSessionForTest } from "../utils/testAuth"
 
 export default defineEventHandler(async (event) => {
     const body = await readBody(event)
-    const { title, content } = body
+    const { title, content, tags } = body
     if (!title || !content) {
         throw createError({
             statusCode: 400,
@@ -17,6 +17,7 @@ export default defineEventHandler(async (event) => {
         title,
         content,
         author: user as User,
+        tags: tags || [],
     })
 
     if (!createWikiResult.success) {

@@ -59,6 +59,25 @@ export async function getWikiList(options: {query: string, page: number, limit: 
     };
 }
 
+export async function getWikiByTag(tag: string): Promise<DbResult<{wikis: {id: string, title: string}[], totalCount: number}>> {
+    const db = getFirestore(app);
+    // %20을 공백으로 변환
+    const allDocsQuery = query(
+        collection(db, WIKI_COLLECTION),
+        where('tags', 'array-contains', tag.replace(/%20/g, ' '))
+    );
+    const querySnapshot = await getDocs(allDocsQuery);
+    const wikis = querySnapshot.docs.map((doc) => {
+        const wiki = doc.data() as Wiki;
+        return {
+            id: wiki.id,
+            title: wiki.title,
+        }
+    });
+    const totalCount = wikis.length;
+    return { success: true, data: { wikis, totalCount } };
+}
+
 export async function setWiki(data: Omit<Wiki, 'id'>): Promise<DbResult<Wiki>> {
     const db = getFirestore(app);
     const wikiId = v4(); // Generate a new UUID for the wiki

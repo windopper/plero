@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { ref, computed } from 'vue'
+import ContentBody from '~/components/common/ContentBody.vue';
 
 // 페이지 메타 설정
 definePageMeta({
@@ -109,7 +110,7 @@ const pageNumbers = computed(() => {
 </script>
 
 <template>
-  <div class="max-w-6xl mx-auto px-4 py-8">
+  <ContentBody>
     <!-- 헤더 -->
     <div class="mb-8">
       <h1 class="text-3xl font-bold text-[var(--ui-text)] mb-2">위키 목록</h1>
@@ -271,7 +272,7 @@ const pageNumbers = computed(() => {
         </button>
       </nav>
     </div>
-  </div>
+  </ContentBody>
 </template>
 
 <style scoped>

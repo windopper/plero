@@ -1,8 +1,9 @@
-import { _permanantDeleteWikiService } from "~/server/service/wiki"
+import { _permanantDeleteWikiService, deleteWikiService } from "~/server/service/wiki"
 import { requireUserSessionForTest } from "../../utils/testAuth"
+import { User } from "~/server/db/schema"
 
 export default defineEventHandler(async (event) => {
-    const { id } = getRouterParams(event) as { id: string }
+    const { id, deleteMessage } = getRouterParams(event) as { id: string, deleteMessage: string }
     if (!id) {
         throw createError({
             statusCode: 400,
@@ -10,9 +11,12 @@ export default defineEventHandler(async (event) => {
         })
     }
 
-    await requireUserSessionForTest(event)
+    const { user } = await requireUserSessionForTest(event)
 
-    const result = await _permanantDeleteWikiService(id)
+    const result = await deleteWikiService(id, {
+        author: user as User,
+        deleteMessage: deleteMessage || "위키 삭제"
+    })
     if (!result.success) {
         throw createError({
             statusCode: 500,

@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
         })
     }
 
-    const { title, content, updateMessage } = await readBody(event)
+    const { title, content, updateMessage, tags } = await readBody(event)
     if (!title || !content || !updateMessage) {
         throw createError({
             statusCode: 400,
@@ -25,6 +25,7 @@ export default defineEventHandler(async (event) => {
         title,
         content,
         updateMessage,
+        tags: tags || [],
         author: user as User
     })
 
