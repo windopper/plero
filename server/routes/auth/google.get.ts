@@ -7,6 +7,7 @@ export default defineOAuthGoogleEventHandler({
     },
     async onSuccess(event, { user, tokens }) {
         try {
+            const { redirectURL } = getQuery(event)
             console.log('Google OAuth user data:', {
                 email: user.email,
                 name: user.name,
@@ -32,7 +33,7 @@ export default defineOAuthGoogleEventHandler({
                 user: dbUser.data,
             });
 
-            return sendRedirect(event, '/');
+            return sendRedirect(event, redirectURL as string || '/');
         } catch (error) {
             console.error('Error in Google OAuth success handler:', error);
             

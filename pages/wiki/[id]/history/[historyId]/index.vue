@@ -8,6 +8,7 @@ import { Icon } from '@iconify/vue';
 const route = useRoute()
 const id = route.params.id
 const historyId = route.params.historyId
+const { loggedIn } = useUserSession()
 
 const { data: response } = await useFetch(`/api/wiki/${id}/history/${historyId}`)
 
@@ -96,8 +97,14 @@ const getRelativeTime = (timestamp: number) => {
 
 // 이 버전으로 되돌리기
 const revertToVersion = async () => {
+    if (!loggedIn.value) {
+        const authorizePopup = useAuthorizeStore()
+        authorizePopup.value.popupOpen = true
+        authorizePopup.value.returnUrl = ``
+        return
+    }
     const result = await $fetch(`/api/wiki/${id}/history/${historyId}/revert`, {
-        method: 'POST' as any
+        method: 'POST'
     });
 
     if (result.success) {
@@ -125,7 +132,12 @@ const navigateToEdit = () => {
     navigateTo(`/wiki/${id}/edit`)
 }
 
-const historyData = computed(() => response.value?.data)
+const historyData = computed(() => {
+    if (response.value?.success) {
+        return response.value.data
+    }
+    return null
+})
 </script>
 
 <template>

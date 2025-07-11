@@ -2,6 +2,13 @@
 import Header from './components/Header.vue'
 import Body from './components/Body.vue'
 import Footer from './components/common/Footer.vue'
+import AuthorizePopup from './components/common/AuthorizePopup.vue'
+
+const authorizePopup = useAuthorizeStore()
+
+onMounted(() => {
+  authorizePopup.value.popupOpen = false
+})
 </script>
 
 <template>
@@ -12,6 +19,8 @@ import Footer from './components/common/Footer.vue'
     <NuxtPage />
   </Body>
   <Footer></Footer>
+  <AuthorizePopup :visible="authorizePopup.popupOpen" @close="authorizePopup.popupOpen = false"
+    @login="authorizePopup.popupOpen = false" :return-url="authorizePopup.returnUrl" />
 </template>
 
 <style>

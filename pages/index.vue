@@ -1,5 +1,18 @@
 <script setup lang="ts">
 import HorizontalDiagonalLine from '~/components/common/HorizontalDiagonalLine.vue';
+
+const { loggedIn } = useUserSession()
+
+const navigateToWikiCreate = () => {
+    const authorizePopup = useAuthorizeStore()
+    if (!loggedIn.value) {
+        authorizePopup.value.popupOpen = true
+        authorizePopup.value.returnUrl = '/wiki/create'
+    } else {
+        navigateTo('/wiki/create')
+    }
+}
+
 </script>
 
 <template>
@@ -13,7 +26,7 @@ import HorizontalDiagonalLine from '~/components/common/HorizontalDiagonalLine.v
         <div class="flex gap-4 px-2 horizontal-line md:text-xl text-base">
             <button
                 class="bg-[var(--ui-primary)] text-[var(--ui-text-inverted)] px-4 py-2 rounded-md w-fit cursor-pointer"
-                @click="navigateTo('/wiki/create')">시작하기</button>
+                @click="navigateToWikiCreate">시작하기</button>
             <button 
                 class="hover:bg-[var(--ui-bg-accented)] text-[var(--ui-text)] px-4 py-2 rounded-md w-fit cursor-pointer
                 border-[1px] border-[var(--ui-border)] hover:border-[var(--ui-border-accented)] transition-all duration-300"

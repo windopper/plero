@@ -5,6 +5,7 @@ import { Icon } from '@iconify/vue';
 
 const route = useRoute()
 const id = route.params.id
+const { loggedIn } = useUserSession()
 const { data: response } = await useFetch(`/api/wiki/${id}/history`)
 
 // 모달 상태 관리
@@ -106,6 +107,12 @@ const navigateToVersionDiff = (historyId: string) => {
 
 // 이 버전으로 되돌리기 (모달 표시)
 const showRevertModal = (history: any) => {
+    if (!loggedIn.value) {
+        const authorizePopup = useAuthorizeStore()
+        authorizePopup.value.popupOpen = true
+        authorizePopup.value.returnUrl = ``
+        return
+    }
     selectedVersionForRevert.value = history
     isRevertModalVisible.value = true
 }

@@ -50,7 +50,7 @@ onUnmounted(() => {
 <template>
     <div class="min-h-screen bg-[var(--ui-bg)]">
         <!-- 상단 헤더 -->
-        <div class="sticky top-0 z-10 bg-[var(--ui-bg)] border-b-[1px] border-[var(--ui-border)] shadow-sm">
+        <div class="sticky top-0 z-10 bg-[var(--ui-bg)] border-b-[1px] border-[var(--ui-border)]">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between items-center h-16">
                     <!-- 왼쪽: 뒤로가기 -->
