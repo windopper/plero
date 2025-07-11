@@ -6,11 +6,23 @@ import { MdPreview } from 'md-editor-v3'
 
 const route = useRoute()
 const id = route.params.id
-const colorMode = useColorMode()
-const { data: response } = await useFetch(`/api/wiki/${id}`)
+
+// 서버사이드에서 위키 정보와 스타 수를 병렬로 로드
+const [{ data: response }, { data: starData }] = await Promise.all([
+    useFetch(`/api/wiki/${id}`),
+    useFetch(`/api/wiki/${id}/stars`)
+])
+
+if (!response.value?.data) {
+    throw createError({
+        statusCode: 404,
+        statusMessage: '위키 페이지를 찾을 수 없습니다.'
+    })
+}
 
 const content = ref(response.value.data.content)
 const title = ref(response.value.data.title)
+const starCount = ref(starData.value.data.starCount)
 
 // 포맷된 업데이트 시간
 const latestUpdate = computed(() => {
@@ -61,7 +73,7 @@ const navigateToHome = () => {
 
                     <!-- 오른쪽: 액션 버튼들 -->
                     <div class="flex items-center gap-3">
-                        <StarButton />
+                        <StarButton :wiki-id="id" :initial-star-count="starCount" />
                         <button @click="navigateToHistory"
                             class="flex items-center gap-2 px-3 py-2 text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] border border-[var(--ui-border)] rounded-lg hover:bg-[var(--ui-bg-muted)] transition-all duration-200">
                             <Icon icon="material-symbols:history" width="16" height="16" />

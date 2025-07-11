@@ -26,7 +26,6 @@ const save = async () => {
             method: "PATCH",
             body: { content: content.value, title: title.value, updateMessage: updateMessage.value }
         })
-        console.log(res)
         navigateTo(`/wiki/${id}`)
     } catch (error) {
         console.error('저장 중 오류가 발생했습니다:', error)
@@ -50,7 +49,6 @@ const confirmDelete = async () => {
         alert('삭제 중 오류가 발생했습니다.')
     }
     showDeleteConfirm.value = false
-    console.log('삭제 확인됨')
 }
 
 const cancelDelete = () => {

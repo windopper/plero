@@ -11,8 +11,8 @@ export async function getWikiContributorsByWikiId(wikiId: string): Promise<DbRes
   const docs = await getDocs(docRef);
   if (docs.empty) {
     return {
-      success: false,
-      error: { message: "Wiki contributor not found" },
+      success: true,
+      data: [],
     };
   }
   

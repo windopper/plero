@@ -21,7 +21,6 @@ const createWiki = async () => {
                 content: text.value
             }
         })
-        console.log(response);
         navigateTo(`/wiki/${response.data.wiki.id}`)
     } catch (error) {
         console.error('위키 생성 중 오류가 발생했습니다:', error)

@@ -8,7 +8,6 @@ const id = route.params.id
 const historyId = route.params.historyId
 
 const { data: response } = await useFetch(`/api/wiki/${id}/history/${historyId}/diff`)
-console.log(response.value.data.changedLines)
 
 // 뒤로가기 함수들
 const navigateToHistory = () => {

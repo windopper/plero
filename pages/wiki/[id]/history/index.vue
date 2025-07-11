@@ -122,7 +122,7 @@ const confirmRevert = async () => {
     
     try {
         const result = await $fetch(`/api/wiki/${id}/history/${selectedVersionForRevert.value.id}/revert`, {
-            method: 'POST' as any
+            method: 'POST'
         });
 
         if (result.success) {

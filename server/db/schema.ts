@@ -87,11 +87,36 @@ export const WIKI_HISTORY_SCHEMA = z.object({
     metadata: z.record(z.string(), z.any()).optional(), // 추가 메타데이터
 })
 
+// 즐겨찾기 목록 스키마 - 사용자가 생성한 즐겨찾기 폴더
+export const FAVORITES_LIST_SCHEMA = z.object({
+    id: z.string().uuid(), // Primary key - UUID
+    userId: z.string().uuid(), // Foreign key to User
+    name: z.string().min(1).max(100), // 즐겨찾기 목록 이름
+    description: z.string().max(500).optional(), // 즐겨찾기 목록 설명
+    color: z.string().optional(), // 목록 색상 (hex code)
+    isDefault: z.boolean().default(false), // 기본 목록 여부
+    createdAt: z.number(), // 생성 시간 (timestamp)
+    updatedAt: z.number(), // 마지막 수정 시간 (timestamp)
+    sortOrder: z.number().int().default(0), // 정렬 순서
+})
+
+// 즐겨찾기 아이템 스키마 - 특정 위키가 특정 즐겨찾기 목록에 포함됨
+export const FAVORITES_ITEM_SCHEMA = z.object({
+    id: z.string().uuid(), // Primary key - UUID
+    userId: z.string().uuid(), // Foreign key to User
+    wikiId: z.string().uuid(), // Foreign key to Wiki
+    listId: z.string().uuid(), // Foreign key to FavoritesList
+    createdAt: z.number(), // 즐겨찾기 추가 시간 (timestamp)
+    note: z.string().max(200).optional(), // 개인 메모
+})
+
 // 타입 추출
 export type User = z.infer<typeof USER_SCHEMA>;
 export type Wiki = z.infer<typeof WIKI_SCHEMA>;
 export type WikiContributor = z.infer<typeof WIKI_CONTRIBUTORS_SCHEMA>;
 export type WikiHistory = z.infer<typeof WIKI_HISTORY_SCHEMA>;
+export type FavoritesList = z.infer<typeof FAVORITES_LIST_SCHEMA>;
+export type FavoritesItem = z.infer<typeof FAVORITES_ITEM_SCHEMA>;
 
 // 관계 정의를 위한 추가 타입들
 export type WikiWithContributors = Wiki & {
@@ -105,4 +130,15 @@ export type WikiWithHistory = Wiki & {
 export type WikiFull = Wiki & {
     contributors: WikiContributor[];
     history: WikiHistory[];
+};
+
+// 즐겨찾기 관련 타입들
+export type FavoritesListWithItems = FavoritesList & {
+    items: FavoritesItem[];
+};
+
+export type WikiWithFavorites = Wiki & {
+    favoritesCount: number;
+    isFavorited: boolean;
+    favoritesLists: FavoritesList[];
 };

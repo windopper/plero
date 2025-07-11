@@ -1,5 +1,67 @@
 # Plero 프로젝트 디자인 시스템
 
+## 📋 최근 완료된 기능들
+
+### 🧩 컴포넌트 분리 및 코드 구조 개선 (2024-12-26)
+- **FavoriteListItem 컴포넌트 분리**: `StarButton.vue`에서 목록 아이템 로직을 별도 컴포넌트로 분리
+  - Props: `list`, `index`, `isChecked`, `isEditing`, `editingName`, `loading`
+  - Events: `toggle`, `context-menu`, `start-editing`, `finish-editing`, `cancel-editing`, `update-editing-name`
+  - 편집 모드와 일반 모드 상태 관리 개선
+  - 키보드 이벤트 처리 (Enter/Escape) 통합
+- **StarButton 컴포넌트 리팩토링**: 복잡한 목록 아이템 로직 제거로 가독성 향상
+  - `finishEditingList` 함수 파라미터 지원 추가
+  - 이벤트 핸들링 단순화
+
+### 🚀 API 분리 및 Hydration 최적화 (2024-12-26)
+- **즐겨찾기 API 분리**: 서버/클라이언트 데이터 로딩 최적화
+  - `GET /api/wiki/[id]/stars` - 위키 스타 수만 반환 (서버사이드)
+  - `GET /api/favorites/user/wiki/[wikiId]` - 사용자 즐겨찾기 데이터 (클라이언트사이드)
+  - 기존 `/api/favorites/wiki/[wikiId]` 제거
+- **StarButton 컴포넌트 개선**: 
+  - `initialStarCount` props 추가로 서버사이드 데이터 전달
+  - 드롭다운 열 때만 사용자 데이터 로드 (지연 로딩)
+  - Hydration 오류 해결
+- **성능 최적화**: 병렬 데이터 로딩으로 초기 로딩 속도 개선
+
+### ⭐ 즐겨찾기 시스템 구현 완료 (2024-12-26)
+- **스키마 설계**: `FAVORITES_LIST_SCHEMA`, `FAVORITES_ITEM_SCHEMA` 추가
+- **데이터베이스 CRUD**: 즐겨찾기 목록 및 아이템 관리 함수들 구현
+  - `favoritesList.ts`: 목록 생성, 수정, 삭제, 조회, 정렬 기능
+  - `favoritesItem.ts`: 위키 즐겨찾기 추가/제거, 조회, 통계 기능
+- **보안 강화된 API 엔드포인트**: `requireUserSessionForTest`를 통한 서버사이드 인증
+  - `GET /api/favorites/lists` - 인증된 사용자의 즐겨찾기 목록 조회
+  - `POST /api/favorites/lists` - 새 즐겨찾기 목록 생성
+  - `PATCH /api/favorites/lists/[id]` - 즐겨찾기 목록 수정
+  - `DELETE /api/favorites/lists/[id]` - 즐겨찾기 목록 삭제
+  - `POST /api/favorites/items` - 위키를 즐겨찾기에 추가
+  - `DELETE /api/favorites/items` - 위키를 즐겨찾기에서 제거
+  - `GET /api/favorites/wiki/[wikiId]` - 위키 즐겨찾기 정보 조회
+- **컴포넌트 연동**: `StarButton.vue` 실제 API와 연동 (클라이언트 사이드 userId 제거)
+  - 실시간 즐겨찾기 상태 표시 및 수정
+  - 다중 즐겨찾기 목록 지원
+  - 새 목록 생성 기능
+  - 기본 목록 자동 생성
+  - 서버사이드 인증을 통한 보안 강화
+- **테스트 완료**: vitest를 통한 DB단 기능 테스트 (19개 테스트 모두 통과)
+
+### ✅ 이전 완료 기능들
+- **위키 목록 페이지 개발**: 검색, 필터링, 페이지네이션 기능
+- **통합 검색 기능**: 실시간 검색 및 결과 하이라이팅
+- **페이지네이션 시스템**: 효율적인 대용량 데이터 처리
+- **홈페이지 기능**: "다른 위키 보러가기" 버튼으로 위키 목록 연결
+
+## 🎯 현재 개발 할일
+
+### 🔨 진행 중
+- **프론트엔드 런타임 테스팅**: 실제 브라우저에서 즐겨찾기 기능 검증
+
+### 📋 대기 중
+- **사용자 인증 시스템**: 실제 사용자 ID를 통한 즐겨찾기 기능 완성
+- **즐겨찾기 페이지**: 사용자의 즐겨찾기 목록을 보여주는 전용 페이지
+- **알림 시스템**: 즐겨찾기한 위키 업데이트 알림
+- **검색 개선**: 즐겨찾기 상태를 포함한 고급 검색 필터
+- **성능 최적화**: 즐겨찾기 관련 API 캐싱 및 최적화
+
 ## 🎨 색상 팔레트
 
 ### CSS 변수 사용 (assets/css/main.css 기준)
@@ -278,6 +340,77 @@ transition-transform duration-200 /* 변형 효과 */
 </div>
 ```
 
+## 🧩 위키 전용 컴포넌트
+
+### FavoriteListItem 컴포넌트
+즐겨찾기 목록 아이템을 담당하는 재사용 가능한 컴포넌트입니다.
+
+#### Props
+```typescript
+interface Props {
+    list: FavoritesList;        // 즐겨찾기 목록 데이터
+    index: number;              // 목록 인덱스 (체크박스 ID용)
+    isChecked: boolean;         // 체크 상태
+    isEditing: boolean;         // 편집 모드 여부
+    editingName: string;        // 편집 중인 이름
+    loading: boolean;           // 로딩 상태
+}
+```
+
+#### Events
+```typescript
+interface Emits {
+    (e: 'toggle', list: FavoritesList): void;                    // 체크박스 토글
+    (e: 'context-menu', event: MouseEvent, list: FavoritesList): void; // 우클릭 컨텍스트 메뉴
+    (e: 'start-editing'): void;                                  // 편집 시작
+    (e: 'finish-editing', name: string): void;                   // 편집 완료
+    (e: 'cancel-editing'): void;                                 // 편집 취소
+    (e: 'update-editing-name', name: string): void;              // 편집 중 이름 업데이트
+}
+```
+
+#### 사용 예시
+```vue
+<FavoriteListItem 
+    :list="list"
+    :index="index"
+    :is-checked="favoritedListIds.includes(list.id)"
+    :is-editing="editingListId === list.id"
+    :editing-name="editingListName"
+    :loading="loading"
+    @toggle="toggleListFavorite"
+    @context-menu="showContextMenuHandler"
+    @start-editing="startEditingList"
+    @finish-editing="finishEditingList"
+    @cancel-editing="cancelEditingList"
+    @update-editing-name="editingListName = $event" />
+```
+
+#### 특징
+- **이중 모드 지원**: 일반 표시 모드와 편집 모드 간 전환
+- **키보드 지원**: Enter(저장), Escape(취소) 키 지원
+- **컨텍스트 메뉴**: 우클릭으로 편집/삭제 메뉴 표시
+- **접근성**: 적절한 label과 체크박스 연결
+- **상태 표시**: 기본 목록 배지, 즐겨찾기 상태 아이콘
+
+### StarButton 컴포넌트
+위키 즐겨찾기 기능을 제공하는 복합 버튼 컴포넌트입니다.
+
+#### Props
+```typescript
+interface Props {
+    wikiId: string;             // 위키 ID
+    initialStarCount?: number;  // 초기 스타 수 (서버사이드 렌더링용)
+}
+```
+
+#### 주요 기능
+- **분할 버튼**: 메인 즐겨찾기 버튼 + 드롭다운 토글
+- **지연 로딩**: 드롭다운 열 때만 사용자 데이터 로드
+- **다중 목록 지원**: 여러 즐겨찾기 목록에 추가/제거 가능
+- **목록 관리**: 새 목록 생성, 이름 수정, 목록 삭제
+- **실시간 업데이트**: 즐겨찾기 상태 실시간 반영
+
 ## ✅ 체크리스트
 
 새로운 컴포넌트나 페이지를 만들 때 확인사항:
@@ -290,6 +423,7 @@ transition-transform duration-200 /* 변형 효과 */
 - [ ] 적절한 트랜지션 효과
 - [ ] 일관된 간격 및 패딩
 - [ ] 접근성 고려 (키보드 네비게이션, 스크린 리더 등)
+- [ ] 컴포넌트 분리 및 재사용성 고려
 description:
 globs:
 alwaysApply: true

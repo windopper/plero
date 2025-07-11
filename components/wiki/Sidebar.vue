@@ -42,7 +42,7 @@ const { data: contributors } = await useFetch(`/api/wiki/${id}/contributors`)
                         역사
                     </button>
                 </div>
-                <StarButton />
+                <StarButton :wiki-id="id" />
             </div>
         </div>
         <Contributors :contributors="contributors.data" />
