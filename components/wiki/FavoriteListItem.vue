@@ -91,7 +91,7 @@ const handleKeyUp = (event: KeyboardEvent) => {
             <button @click="emit('cancel-editing')" :disabled="loading"
                 class="p-1 text-[var(--ui-text-muted)] hover:text-red-500 disabled:opacity-50">
                 <Icon icon="material-symbols:close" width="14" height="14" />
-            </button>
+            </button>   
         </div>
     </div>
 </template> 

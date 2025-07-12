@@ -14,25 +14,18 @@
 - ✅ **Google OAuth 인증** - 간편한 로그인 시스템
 - ✅ **다크모드 지원** - 사용자 선호에 맞는 테마
 - ✅ **반응형 디자인** - 모바일, 태블릿, 데스크톱 최적화
-- 🔄 **즐겨찾기 시스템** - 개발 중
-- 🔄 **태그 기반 분류** - 개발 중
+- ✅ **즐겨찾기 시스템** - 개발 중
+- ✅ **태그 기반 분류** - 개발 중
 - 🔄 **통합 검색** - 개발 중
 
 ## 🏗️ 기술 스택
 
-### Frontend
 [![Nuxt](https://img.shields.io/badge/nuxt-00DC82?style=for-the-badge&logo=nuxt&logoColor=white)](https://nuxt.com/)
 [![Vue.js](https://img.shields.io/badge/Vue.js-4FC08D?style=for-the-badge&logo=vuedotjs&logoColor=white)](https://vuejs.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
 [![Iconify](https://img.shields.io/badge/Iconify-026C9C?style=for-the-badge&logo=Iconify&logoColor=white)](https://iconify.design/)
-
-### Backend & Database
-[![Firebase](https://img.shields.io/badge/Firebase-DD2C00?style=for-the-badge&logo=firebase&logoColor=white)](https://firebase.google.com/)
-
-### Testing
+[![DynamoDB](https://img.shields.io/badge/DynamoDB-4053D6?style=for-the-badge&logo=amazon-dynamodb&logoColor=white)](https://aws.amazon.com/dynamodb/)
 [![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
-
-### Markdown Editor
 [![md-editor-v3](https://img.shields.io/badge/md--editor--v3-000000?style=for-the-badge&logo=md-editor-v3&logoColor=white)](https://md-editor-v3.vercel.app/)
 
 ## 📁 프로젝트 구조
@@ -74,14 +67,14 @@ plero/
 
 #### 📝 위키 관리
 - [x] **태그 시스템 UI 완성** - 스키마는 존재, UI 구현 필요
-- [ ] **공개/비공개 설정 UI** - `isPublished` 필드 활용
+- [x] **공개/비공개 설정 UI** - `isPublished` 필드 활용
 - [ ] **검색 기능 고도화** - 하이라이팅, 정렬 옵션, 필터링 추가
-- [ ] **사용자 프로필 페이지** - 개인 대시보드 및 설정
-- [ ] **태그 페이지 개발** - 태그별 위키 목록 페이지 완성
+- [x] **사용자 프로필 페이지** - 개인 대시보드 및 설정
+- [x] **태그 페이지 개발** - 태그별 위키 목록 페이지 완성
 
 #### ⭐ 즐겨찾기 시스템
 - [x] **즐겨찾기 목록 관리** - "새 목록 만들기" 기능
-- [ ] **즐겨찾기 페이지** - 저장된 위키들 관리
+- [x] **즐겨찾기 페이지** - 저장된 위키들 관리
 
 
 ### 💫 **우선순위 낮음**

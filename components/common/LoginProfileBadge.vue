@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue';
-const { session, loggedIn, clear } = useUserSession();
+const { session, loggedIn, clear, user } = useUserSession();
 const colorMode = useColorMode();
 const menuOpen = ref(false);
 const containerTemplateRef = useTemplateRef('containerTemplateRef');
@@ -25,15 +25,25 @@ const loggedInMenuList = [
         name: '프로필 보기',
         icon: 'material-symbols:person-outline',
         onClick: () => {
-            navigateTo('/profile');
+            if (user.value && 'id' in user.value) {
+                navigateTo(`/profile/${user.value.id}`);
+            }
         },
         description: '내 프로필 정보 확인'
+    },
+    {
+        name: '기록 보기',
+        icon: 'material-symbols:history',
+        onClick: () => {
+            navigateTo(`/profile/${user.value?.id}/history`);
+        },
+        description: '내 기록 확인'
     },
     {
         name: '즐겨찾기',
         icon: 'material-symbols:star-outline',
         onClick: () => {
-            navigateTo('/favorites');
+            navigateTo(`/profile/${user.value?.id}/favorites`);
         },
         description: '저장한 위키 목록'
     },
@@ -146,7 +156,8 @@ const loggedInMenuList = [
                             v-for="item in loggedInMenuList" 
                             :key="item.name"
                             @click="item.onClick"
-                            class="group w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 hover:bg-[var(--ui-bg-muted)]"
+                            class="group w-full flex items-center gap-3 px-3 py-3 rounded-lg 
+                            transition-all duration-200 hover:bg-[var(--ui-bg-muted)] cursor-pointer"
                             :class="item.danger ? 'hover:bg-red-50 dark:hover:bg-red-900/20' : ''"
                         >
                             <div 

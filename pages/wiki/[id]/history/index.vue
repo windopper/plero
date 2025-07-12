@@ -4,6 +4,7 @@ import HistoryCard from '~/components/wiki/HistoryCard.vue';
 import { Icon } from '@iconify/vue';
 import ContentHeader from '~/components/common/ContentHeader.vue';
 import ContentBody from '~/components/common/ContentBody.vue';
+import NavigationTitle from '~/components/common/NavigationTitle.vue';
 
 const route = useRoute()
 const id = route.params.id
@@ -39,16 +40,8 @@ const navigateToWiki = () => {
         <!-- 상단 헤더 -->
         <ContentHeader>
             <!-- 왼쪽: 브레드크럼 -->
-            <div class="flex items-center gap-2 text-sm">
-                <button @click="navigateToWiki"
-                    class="flex items-center gap-2 text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors duration-200 group">
-                    <Icon icon="material-symbols:arrow-back" width="20" height="20"
-                        class="group-hover:scale-110 transition-transform duration-200" />
-                    <span class="font-medium">위키로 돌아가기</span>
-                </button>
-                <div class="ml-2 h-6 w-px bg-[var(--ui-border)]"></div>
-                <h1 class="ml-2 text-lg font-semibold text-[var(--ui-text)]">변경 기록</h1>
-            </div>
+
+            <NavigationTitle title="변경 기록" backButton :navigatePath="`/wiki/${id}`" />
 
             <!-- 오른쪽: 통계 정보 -->
             <div class="flex items-center gap-4 text-sm text-[var(--ui-text-muted)]">

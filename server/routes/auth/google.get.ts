@@ -39,19 +39,6 @@ export default defineOAuthGoogleEventHandler({
             
             // user 데이터가 최소한 있는 경우에만 fallback 세션 생성
             if (user && user.email) {
-                await setUserSession(event, {
-                    user: {
-                        provider: 'google',
-                        avatar: user.picture,
-                        name: user.name || 'Unknown User',
-                        email: user.email,
-                        login: user.email,
-                        loggedInAt: new Date().toISOString(),
-                        loggedOutAt: null,
-                        loggedIn: true,
-                        loggedOut: false,
-                    }
-                });
                 return sendRedirect(event, '/?error=db_sync_failed');
             } else {
                 // 완전히 실패한 경우

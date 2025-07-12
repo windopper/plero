@@ -1,127 +1,261 @@
-import { getFirestore, doc, getDoc, setDoc, deleteDoc, Query, getDocs, collection, where, query, limit, startAfter, startAt, endAt, orderBy } from "firebase/firestore";
-import app from ".";
+import { 
+    GetItemCommand, 
+    PutItemCommand, 
+    DeleteItemCommand, 
+    ScanCommand, 
+    QueryCommand,
+    UpdateItemCommand
+} from "@aws-sdk/client-dynamodb";
+import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
+import client from ".";
 import { WIKI_COLLECTION } from "./constants";
 import { Wiki, WIKI_SCHEMA } from "./schema";
 import { v4 } from "uuid";
 import type { DbResult } from "../type";
 
 export async function getWiki(id: string): Promise<DbResult<Wiki>> {
-    const db = getFirestore(app);
-    const docRef = doc(db, WIKI_COLLECTION, id);
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-        const result = WIKI_SCHEMA.safeParse(docSnap.data());
-        if (result.success) {
-            return { success: true, data: result.data };
+    try {
+        const command = new GetItemCommand({
+            TableName: WIKI_COLLECTION,
+            Key: marshall({ id }),
+        });
+
+        const response = await client.send(command);
+        
+        if (response.Item) {
+            const data = unmarshall(response.Item);
+            const result = WIKI_SCHEMA.safeParse(data);
+            if (result.success) {
+                return { success: true, data: result.data };
+            } else {
+                return { success: false, error: { message: result.error.message } };
+            }
         } else {
-            return { success: false, error: { message: result.error.message } };
+            return {
+                success: false,
+                error: { message: "Wiki not found" },
+            };
         }
-    } else {
+    } catch (error) {
         return {
             success: false,
-            error: { message: "Wiki not found" },
+            error: { message: `Failed to get wiki: ${error}` },
         };
     }
 }
 
-export async function getWikiList(options: {query: string, page: number, limit: number}): Promise<DbResult<{wikis: Wiki[], totalCount: number, hasMore: boolean}>> {
-    const db = getFirestore(app);
-    const { query: searchQuery, page, limit: pageLimit } = options;
-    const actualLimit = pageLimit || 10;
-    
-    // 전체 위키 문서를 가져온 후 클라이언트 사이드에서 필터링
-    // Firestore는 전체 텍스트 검색을 지원하지 않으므로 이 방식을 사용
-    const allDocsQuery = query(
-      collection(db, WIKI_COLLECTION),
-      where('title', '>=', searchQuery),
-      where('title', '<=', searchQuery + "\uf8ff"),
-    );
-    const querySnapshot = await getDocs(allDocsQuery);
-    
-    let allWikis = querySnapshot.docs.map((doc) => doc.data() as Wiki);
-    
-    // 최신 순으로 정렬
-    allWikis.sort((a, b) => b.updatedAt - a.updatedAt);
-    
-    const totalCount = allWikis.length;
-    const startIndex = (page - 1) * actualLimit;
-    const endIndex = startIndex + actualLimit;
-    const wikis = allWikis.slice(startIndex, endIndex);
-    const hasMore = endIndex < totalCount;
-    
-    return { 
-        success: true, 
-        data: {
-            wikis,
-            totalCount,
-            hasMore
+export async function getWikiList(options: {query: string, exclusiveStartKey?: string, limit: number}): Promise<DbResult<{wikis: Wiki[], lastEvaluatedKey?: string, hasMore: boolean}>> {
+    try {
+        const { query: searchQuery, exclusiveStartKey, limit: pageLimit } = options;
+        const actualLimit = pageLimit || 10;
+        
+        let command;
+        
+        const baseParams = {
+            TableName: WIKI_COLLECTION,
+            Limit: actualLimit,
+            ...(exclusiveStartKey && { ExclusiveStartKey: JSON.parse(exclusiveStartKey) })
+        };
+        
+        if (searchQuery) {
+            // 검색어가 있을 때는 FilterExpression을 사용하여 title에서 부분 일치 검색
+            command = new ScanCommand({
+                ...baseParams,
+                FilterExpression: "contains(#title, :searchQuery) AND #isPublished = :isPublished",
+                ExpressionAttributeNames: {
+                    "#title": "title",
+                    "#isPublished": "isPublished"
+                },
+                ExpressionAttributeValues: marshall({
+                    ":searchQuery": searchQuery,
+                    ":isPublished": true
+                }),
+            });
+        } else {
+            // 검색어가 없을 때는 모든 위키를 가져옴
+            command = new ScanCommand(baseParams);
         }
-    };
+
+        const response = await client.send(command);
+        
+        if (!response.Items) {
+            return { 
+                success: true, 
+                data: {
+                    wikis: [],
+                    hasMore: false
+                }
+            };
+        }
+
+        const wikis = response.Items.map(item => {
+            const data = unmarshall(item);
+            const result = WIKI_SCHEMA.safeParse(data);
+            return result.success ? result.data : null;
+        }).filter(wiki => wiki !== null) as Wiki[];
+        
+        // 최신 순으로 정렬
+        wikis.sort((a, b) => b.updatedAt - a.updatedAt);
+        
+        const hasMore = !!response.LastEvaluatedKey;
+        const lastEvaluatedKey = response.LastEvaluatedKey ? JSON.stringify(response.LastEvaluatedKey) : undefined;
+        
+        return { 
+            success: true, 
+            data: {
+                wikis,
+                lastEvaluatedKey,
+                hasMore
+            }
+        };
+    } catch (error) {
+        return {
+            success: false,
+            error: { message: `Failed to get wiki list: ${error}` },
+        };
+    }
 }
 
 export async function getWikiByTag(tag: string): Promise<DbResult<{wikis: {id: string, title: string}[], totalCount: number}>> {
-    const db = getFirestore(app);
-    // %20을 공백으로 변환
-    const allDocsQuery = query(
-        collection(db, WIKI_COLLECTION),
-        where('tags', 'array-contains', tag.replace(/%20/g, ' '))
-    );
-    const querySnapshot = await getDocs(allDocsQuery);
-    const wikis = querySnapshot.docs.map((doc) => {
-        const wiki = doc.data() as Wiki;
-        return {
-            id: wiki.id,
-            title: wiki.title,
+    try {
+        // %20을 공백으로 변환
+        const decodedTag = tag.replace(/%20/g, ' ');
+        
+        const command = new ScanCommand({
+            TableName: WIKI_COLLECTION,
+            FilterExpression: "contains(tags, :tag)",
+            ExpressionAttributeValues: marshall({
+                ":tag": decodedTag
+            }),
+        });
+
+        const response = await client.send(command);
+        
+        if (!response.Items) {
+            return { success: true, data: { wikis: [], totalCount: 0 } };
         }
-    });
-    const totalCount = wikis.length;
-    return { success: true, data: { wikis, totalCount } };
+
+        const wikis = response.Items.map(item => {
+            const data = unmarshall(item);
+            const result = WIKI_SCHEMA.safeParse(data);
+            if (result.success) {
+                return {
+                    id: result.data.id,
+                    title: result.data.title,
+                };
+            }
+            return null;
+        }).filter(wiki => wiki !== null) as {id: string, title: string}[];
+
+        const totalCount = wikis.length;
+        return { success: true, data: { wikis, totalCount } };
+    } catch (error) {
+        return {
+            success: false,
+            error: { message: `Failed to get wiki by tag: ${error}` },
+        };
+    }
 }
 
 export async function setWiki(data: Omit<Wiki, 'id'>): Promise<DbResult<Wiki>> {
-    const db = getFirestore(app);
-    const wikiId = v4(); // Generate a new UUID for the wiki
-    const docRef = doc(db, WIKI_COLLECTION, wikiId);
-    const wikiData: Wiki = {
-        id: wikiId,
-        ...data,
-    };
+    try {
+        const wikiId = v4(); // Generate a new UUID for the wiki
+        const wikiData: Wiki = {
+            id: wikiId,
+            ...data,
+        };
 
-    await setDoc(docRef, wikiData);
-    return { success: true, data: wikiData as Wiki };
+        const command = new PutItemCommand({
+            TableName: WIKI_COLLECTION,
+            Item: marshall(wikiData),
+        });
+
+        await client.send(command);
+        return { success: true, data: wikiData };
+    } catch (error) {
+        return {
+            success: false,
+            error: { message: `Failed to create wiki: ${error}` },
+        };
+    }
 }
 
 export async function updateWiki(id: string, data: Partial<Omit<Wiki, 'id'>>): Promise<DbResult<Wiki>> {
-    const db = getFirestore(app);
-    const docRef = doc(db, WIKI_COLLECTION, id);
-    const docSnap = await getDoc(docRef);
-    
-    if (!docSnap.exists()) {
+    try {
+        // 먼저 기존 데이터 조회
+        const existingWiki = await getWiki(id);
+        if (!existingWiki.success) {
+            return existingWiki;
+        }
+
+        const updatedData = { ...existingWiki.data, ...data, updatedAt: Date.now() };
+
+        const parseResult = WIKI_SCHEMA.safeParse(updatedData);
+        if (!parseResult.success) {
+            return {
+                success: false,
+                error: { message: "Invalid wiki data format" },
+            };
+        }
+
+        const command = new PutItemCommand({
+            TableName: WIKI_COLLECTION,
+            Item: marshall(parseResult.data),
+        });
+
+        await client.send(command);
+        return { success: true, data: parseResult.data };
+    } catch (error) {
         return {
             success: false,
-            error: { message: "Wiki not found" },
+            error: { message: `Failed to update wiki: ${error}` },
         };
     }
-
-    const currentData = docSnap.data();
-    const updatedData = { ...currentData, ...data, updatedAt: Date.now() };
-
-    const parseResult = WIKI_SCHEMA.safeParse(updatedData);
-    if (!parseResult.success) {
-        return {
-            success: false,
-            error: { message: "Invalid wiki data format" },
-        };
-    }
-
-    await setDoc(docRef, parseResult.data);
-    return { success: true, data: parseResult.data as Wiki };
 }
 
 export async function deleteWiki(id: string): Promise<DbResult<void>> {
-    const db = getFirestore(app);
-    const docRef = doc(db, WIKI_COLLECTION, id);
-    await deleteDoc(docRef);
-    return { success: true, data: undefined };
+    try {
+        const command = new DeleteItemCommand({
+            TableName: WIKI_COLLECTION,
+            Key: marshall({ id }),
+        });
+
+        await client.send(command);
+        return { success: true, data: undefined };
+    } catch (error) {
+        return {
+            success: false,
+            error: { message: `Failed to delete wiki: ${error}` },
+        };
+    }
+}
+
+export async function checkPublicWikiTitleExists(title: string, excludeId?: string): Promise<DbResult<boolean>> {
+    try {
+        const command = new ScanCommand({
+            TableName: WIKI_COLLECTION,
+            FilterExpression: "#title = :title AND #isPublished = :isPublished" + (excludeId ? " AND #id <> :excludeId" : ""),
+            ExpressionAttributeNames: {
+                "#title": "title",
+                "#isPublished": "isPublished",
+                ...(excludeId && { "#id": "id" })
+            },
+            ExpressionAttributeValues: marshall({
+                ":title": title,
+                ":isPublished": true,
+                ...(excludeId && { ":excludeId": excludeId })
+            }),
+        });
+
+        const response = await client.send(command);
+        
+        const exists = !!(response.Items && response.Items.length > 0);
+        return { success: true, data: exists };
+    } catch (error) {
+        return {
+            success: false,
+            error: { message: `Failed to check title existence: ${error}` },
+        };
+    }
 }
 

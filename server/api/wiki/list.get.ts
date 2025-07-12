@@ -1,10 +1,10 @@
 import { getWikiList } from "../../db/wiki";
 
 export default defineEventHandler(async (event) => {
-    const { query, page, limit } = getQuery(event);
+    const { query, exclusiveStartKey, limit } = getQuery(event);
     const result = await getWikiList({
         query: (query as string) || "", 
-        page: Number(page) || 1, 
+        exclusiveStartKey: exclusiveStartKey as string, 
         limit: Number(limit) || 10
     });
     
@@ -19,11 +19,9 @@ export default defineEventHandler(async (event) => {
         success: true,
         data: result.data,
         pagination: {
-            currentPage: Number(page) || 1,
             limit: Number(limit) || 10,
-            totalCount: result.data.totalCount,
             hasMore: result.data.hasMore,
-            totalPages: Math.ceil(result.data.totalCount / (Number(limit) || 10))
+            lastEvaluatedKey: result.data.lastEvaluatedKey
         }
     };
 })

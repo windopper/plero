@@ -349,6 +349,47 @@ interface Props {
 - **목록 관리**: 새 목록 생성, 이름 수정, 목록 삭제
 - **실시간 업데이트**: 즐겨찾기 상태 실시간 반영
 
+### WikiPublishButton 컴포넌트
+위키 공개/비공개 상태를 관리하는 버튼 컴포넌트입니다.
+
+#### Props
+```typescript
+interface Props {
+    isPublished: boolean;       // 현재 공개 상태
+    wikiId: string;             // 위키 ID
+    wikiTitle: string;          // 위키 제목 (중복 검사용)
+}
+```
+
+#### Events
+```typescript
+interface Emits {
+    (e: 'update:isPublished', value: boolean): void;  // 공개 상태 변경
+}
+```
+
+#### 주요 기능
+- **상태별 버튼**: 공개/비공개 상태에 따른 버튼 표시
+- **제목 중복 검사**: 공개 시 제목 중복 여부 실시간 확인
+- **모달 인터페이스**: 공개 확인 모달 with 상태 표시
+- **API 연동**: 실제 서버 상태 업데이트
+- **다크모드 지원**: 모든 상태 표시에 다크모드 색상 적용
+
+#### 사용 예시
+```vue
+<WikiPublishButton 
+    :is-published="isPublished" 
+    :wiki-id="wikiId" 
+    :wiki-title="wikiTitle"
+    @update:is-published="handlePublishUpdate" />
+```
+
+#### 모달 상태
+1. **제목 검사 중**: 로딩 스피너와 함께 "제목 중복 검사 중..." 표시
+2. **제목 중복**: 경고 아이콘과 함께 중복 안내, 공개 버튼 비활성화
+3. **제목 사용 가능**: 체크 아이콘과 함께 사용 가능 안내, 공개 버튼 활성화
+4. **공개 처리 중**: 공개 버튼에 로딩 스피너 표시
+
 ### AuthorizePopup 컴포넌트
 로그인이 필요한 기능에 접근할 때 표시되는 모달 팝업 컴포넌트입니다.
 
@@ -393,253 +434,166 @@ interface Emits {
 </template>
 
 <script setup>
-const { loggedIn } = useUserSession();
-const route = useRoute();
-const showAuthPopup = ref(false);
-
-// 현재 페이지 URL을 returnUrl로 사용
-const currentRoute = computed(() => route.fullPath);
+const showAuthPopup = ref(false)
+const currentRoute = useRoute().fullPath
 
 const handleProtectedAction = () => {
     if (!loggedIn.value) {
-        showAuthPopup.value = true;
-        return;
+        showAuthPopup.value = true
+        return
     }
-    
-    // 실제 기능 실행
-    addToFavorites();
-};
+    // 로그인된 경우 실제 기능 실행
+    performAction()
+}
 
 const handleLogin = () => {
-    // 로그인 성공 후 자동으로 팝업이 닫히고 returnUrl로 이동
-    console.log('로그인 프로세스 시작');
-};
-</script>
-```
-
-#### 특징
-- **자동 상태 감지**: 로그인 성공 시 자동으로 팝업 닫기
-- **자동 리다이렉트**: returnUrl 제공 시 로그인 후 해당 페이지로 자동 이동
-- **키보드 지원**: ESC 키로 팝업 닫기
-- **백드롭 클릭**: 배경 클릭으로 팝업 닫기
-- **스크롤 방지**: 팝업 표시 중 배경 스크롤 차단
-- **접근성**: 적절한 ARIA 속성과 포커스 관리
-- **애니메이션**: 부드러운 fade + scale 트랜지션
-
-## 🏷️ 태그 시스템
-
-### 태그 개념
-Plero의 태그 시스템은 페이지 분류 기능으로, 두 가지 타입을 지원합니다:
-
-1. **사용자 태그**: 일반 태그명 (예: `frontend`, `tutorial`)
-   - 사용자가 생성한 페이지끼리만 분류
-   - 개인 또는 팀 단위의 콘텐츠 관리용
-
-2. **시스템 태그**: `plero:` 접두사 태그 (예: `plero:official`, `plero:guide`)
-   - Plero 서비스 전체에 대해 페이지 분류
-   - 공식 문서, 가이드 등 전역 콘텐츠용
-
-### Editor.vue 태그 UI 구현
-```vue
-<template>
-    <div class="space-y-3">
-        <label class="text-sm font-medium text-[var(--ui-text)]">태그</label>
-        
-        <!-- 기존 태그들 -->
-        <div v-if="tags.length > 0" class="flex flex-wrap gap-2">
-            <div 
-                v-for="tag in tags" 
-                :key="tag" 
-                :class="[
-                    'rounded-full px-3 py-1 text-sm flex items-center gap-2 transition-colors',
-                    isPleroTag(tag) 
-                        ? 'bg-[var(--ui-primary)] text-[var(--ui-text-inverted)]' 
-                        : 'bg-[var(--ui-bg-elevated)] text-[var(--ui-text)] border border-[var(--ui-border)]'
-                ]"
-            >
-                <span v-if="isPleroTag(tag)" class="text-xs opacity-80">🏷️</span>
-                <span v-else class="text-xs opacity-80">🔖</span>
-                {{ tag }}
-                <button @click="removeTag(tag)">
-                    <Icon name="mdi:close" class="w-3 h-3" />
-                </button>
-            </div>
-        </div>
-
-        <!-- 새 태그 입력 -->
-        <div class="flex gap-2">
-            <input 
-                v-model="newTag"
-                type="text" 
-                placeholder="태그를 입력하고 Enter를 누르세요 (예: frontend, plero:official)"
-                @keydown="handleTagInput"
-                class="flex-1 text-[var(--ui-text)] bg-[var(--ui-bg)] border border-[var(--ui-border)] rounded-md px-3 py-2 text-sm outline-none focus:border-[var(--ui-primary)] transition-colors" 
-            />
-            <button 
-                @click="addTag"
-                :disabled="!newTag.trim()"
-                class="px-4 py-2 bg-[var(--ui-primary)] text-[var(--ui-text-inverted)] rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--ui-primary-elevated)] transition-colors"
-            >
-                추가
-            </button>
-        </div>
-
-        <!-- 태그 설명 -->
-        <div class="text-xs text-[var(--ui-text-muted)] space-y-1">
-            <p>• 일반 태그: 사용자 페이지끼리 분류됩니다 (예: frontend, tutorial)</p>
-            <p>• plero: 태그: 전체 서비스에서 분류됩니다 (예: plero:official, plero:guide)</p>
-        </div>
-    </div>
-</template>
-
-<script setup>
-const newTag = ref('')
-
-const addTag = () => {
-    const trimmedTag = newTag.value.trim()
-    if (trimmedTag && !props.tags.includes(trimmedTag)) {
-        emit('update:tags', [...props.tags, trimmedTag])
-        newTag.value = ''
-    }
-}
-
-const handleTagInput = (event) => {
-    if (event.key === 'Enter') {
-        event.preventDefault()
-        addTag()
-    }
-}
-
-const isPleroTag = (tag) => {
-    return tag.startsWith('plero:')
+    // 로그인 처리 로직
+    showAuthPopup.value = false
 }
 </script>
 ```
 
-### 태그 시각적 구분
-- **사용자 태그**: 
-  - 배경: `var(--ui-bg-elevated)` (연한 회색)
-  - 테두리: `var(--ui-border)`
-  - 아이콘: 🔖 (북마크)
+## 🛡️ 관리자 패널 (AdminPanel)
 
-- **시스템 태그 (plero:)**:
-  - 배경: `var(--ui-primary)` (인디고)
-  - 텍스트: `var(--ui-text-inverted)` (흰색)
-  - 아이콘: 🏷️ (태그)
+### 기능 개요
+- **위치**: 우측 상단 빨간색 왕관 아이콘 버튼
+- **권한**: 관리자 권한(`role: "admin"`)을 가진 사용자만 표시
+- **토글**: 버튼 클릭 또는 `Ctrl+Shift+A` 단축키로 패널 열기/닫기
+- **현재 기능**: 위키 영구 삭제
 
-### 태그 기능
-- **Enter 키 입력**: 새 태그 즉시 추가
-- **중복 방지**: 동일한 태그 재추가 차단
-- **개별 삭제**: 각 태그별 X 버튼으로 제거
-- **실시간 미리보기**: 입력과 동시에 태그 유형 구분
-- **설명 텍스트**: 사용자에게 태그 유형별 용도 안내
+### 사용법
+```vue
+<!-- 관리자 패널 토글 버튼 -->
+<button
+  v-if="isAdmin"
+  @click="toggleAdminPanel"
+  class="admin-toggle-btn"
+  title="관리자 패널 열기 (Ctrl+Shift+A)"
+>
+  <Icon icon="mdi:shield-crown" class="text-lg" />
+</button>
 
-### HistoryCard 컴포넌트
-위키 변경 기록 항목을 표시하는 재사용 가능한 카드 컴포넌트입니다.
+<!-- 관리자 패널 -->
+<AdminPanel
+  v-if="isAdmin"
+  :visible="adminPanel.visible"
+  @toggle="toggleAdminPanel"
+/>
+```
 
-#### Props
-```typescript
-import type { WikiHistory } from '~/server/db/schema';
-
-interface Props {
-    history: WikiHistory;       // 변경 기록 데이터 (schema.ts의 WikiHistory 타입)
-    wikiId: string | string[];  // 위키 ID
+### 스타일링
+```css
+.admin-toggle-btn {
+  @apply fixed top-4 right-4 z-40;
+  @apply bg-red-500 hover:bg-red-600 text-white;
+  @apply w-12 h-12 rounded-full shadow-lg;
+  @apply flex items-center justify-center;
+  @apply transition-all duration-200;
+  @apply hover:scale-110 active:scale-95;
 }
 ```
 
-#### Events
-```typescript
-interface Emits {
-    (e: 'view-version', historyId: string): void;     // 버전 보기
-    (e: 'view-diff', historyId: string): void;        // 차이점 보기
-    (e: 'revert', history: WikiHistory): void;        // 되돌리기
+### 위키 삭제 기능
+- **API 엔드포인트**: `/admin/wiki/{id}` (DELETE)
+- **확인 절차**: 사용자 확인 대화상자 표시
+- **영구 삭제**: 위키, 히스토리, 기여자 정보 완전 삭제
+- **오류 처리**: 삭제 실패 시 오류 메시지 표시
+
+### 보안 고려사항
+- 서버 미들웨어에서 관리자 권한 검증
+- 클라이언트에서도 UI 레벨 권한 확인
+- 위험한 작업에 대한 확인 절차 필수
+
+### 키보드 단축키
+- `Ctrl+Shift+A`: 관리자 패널 토글
+- `Escape`: 패널 닫기
+
+## 🚀 최근 완료된 기능 개선사항
+
+### 위키 목록 페이지 성능 개선 (2024-12-27)
+**문제**: 더 보기 버튼 클릭 시 페이지 전체가 리로드되어 스크롤 위치가 초기화되는 문제
+
+**해결 방법**:
+1. **useFetch watch 옵션 최적화**: `exclusiveStartKey`를 watch 배열에서 제거하여 불필요한 리로드 방지
+2. **더 보기 기능 분리**: 별도의 `$fetch` 호출로 추가 데이터만 로드
+3. **상태 관리 개선**: `isLoading` 상태로 더 보기 로딩 상태 별도 관리
+4. **스크롤 위치 유지**: 페이지 리로드 없이 새 데이터를 기존 배열에 추가
+
+**기술적 구현**:
+```javascript
+// 더 보기 함수 (별도 $fetch 사용)
+const loadMore = async () => {
+  if (!pagination.value.hasMore || !exclusiveStartKey.value || isLoading.value) return
+  
+  isLoading.value = true
+  try {
+    const response = await $fetch('/api/wiki/list', {
+      query: {
+        query: debouncedSearch.value,
+        exclusiveStartKey: exclusiveStartKey.value,
+        limit: limit.value,
+      }
+    })
+    
+    if (response?.data?.wikis) {
+      // 기존 결과에 추가 (페이지 리로드 없음)
+      allWikis.value.push(...response.data.wikis)
+      
+      // 페이지네이션 정보 업데이트
+      if (response.pagination?.lastEvaluatedKey) {
+        exclusiveStartKey.value = response.pagination.lastEvaluatedKey
+      }
+    }
+  } catch (error) {
+    console.error('더 보기 로드 실패:', error)
+  } finally {
+    isLoading.value = false
+  }
 }
 ```
 
-#### 사용 예시
-```vue
-<template>
-    <div class="divide-y divide-[var(--ui-border)]">
-        <HistoryCard
-            v-for="history in historyList" 
-            :key="history.id"
-            :history="history"
-            :wiki-id="wikiId"
-            @view-version="navigateToVersion"
-            @view-diff="navigateToVersionDiff"
-            @revert="showRevertModal"
-        />
-    </div>
-</template>
-```
+**사용자 경험 개선**:
+- ✅ 더 보기 클릭 시 스크롤 위치 유지
+- ✅ 페이지 리로드 없이 부드러운 콘텐츠 로딩
+- ✅ 별도 로딩 상태 표시로 사용자 피드백 개선
+- ✅ 중복 클릭 방지로 안정성 향상
 
-#### 주요 기능
-- **변경 유형별 스타일링**: 생성, 편집, 되돌리기 등 각각 다른 색상과 아이콘
-- **태그 변경 표시**: addedTags(초록색)와 removedTags(빨간색) 구분 표시
-- **변경량 시각화**: 추가/삭제된 문자 수 색상 코딩
-- **액션 버튼**: 버전 보기, 차이점 보기, 되돌리기 기능
-- **반응형 레이아웃**: 모바일/데스크톱 대응
-- **접근성**: 적절한 title 속성과 키보드 지원
+### 히스토리 페이지 페이지네이션 구현 (2024-12-27)
+**기능**: 사용자별 히스토리 페이지에 키 기반 페이지네이션 시스템 구현
 
-#### 태그 변경 사항 표시
-```vue
-<!-- 추가된 태그 -->
-<div v-if="history.addedTags && history.addedTags.length > 0" class="flex items-center gap-2 flex-wrap">
-    <div class="flex items-center gap-1">
-        <Icon icon="material-symbols:add-circle-outline" width="14" height="14" class="text-green-600 dark:text-green-400" />
-        <span class="text-xs text-green-600 dark:text-green-400 font-medium">추가된 태그:</span>
-    </div>
-    <div class="flex gap-1 flex-wrap">
-        <span 
-            v-for="tag in history.addedTags.slice(0, 3)" 
-            :key="tag"
-            class="inline-flex items-center px-2 py-1 text-xs bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded border border-green-200 dark:border-green-800"
-        >
-            {{ tag }}
-        </span>
-    </div>
-</div>
+**구현 내용**:
+1. **백엔드 API 개선**:
+   - `getWikiHistoriesByUserId` 함수에 페이지네이션 옵션 추가
+   - `exclusiveStartKey`, `limit` 파라미터 지원
+   - DynamoDB Query 명령에 페이지네이션 파라미터 적용
 
-<!-- 제거된 태그 -->
-<div v-if="history.removedTags && history.removedTags.length > 0" class="flex items-center gap-2 flex-wrap">
-    <div class="flex items-center gap-1">
-        <Icon icon="material-symbols:remove-circle-outline" width="14" height="14" class="text-red-600 dark:text-red-400" />
-        <span class="text-xs text-red-600 dark:text-red-400 font-medium">제거된 태그:</span>
-    </div>
-    <div class="flex gap-1 flex-wrap">
-        <span 
-            v-for="tag in history.removedTags.slice(0, 3)" 
-            :key="tag"
-            class="inline-flex items-center px-2 py-1 text-xs bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded border border-red-200 dark:border-red-800 line-through"
-        >
-            {{ tag }}
-        </span>
-    </div>
-</div>
-```
+2. **API 엔드포인트 업데이트**:
+   ```typescript
+   // /api/history/list
+   const { userId, exclusiveStartKey, limit } = getQuery(event)
+   const result = await getWikiHistoriesByUserId({
+     userId,
+     exclusiveStartKey,
+     limit: limit ? parseInt(limit) : 30
+   })
+   ```
 
-#### 특징
-- **분리된 관심사**: 히스토리 페이지에서 카드 로직을 분리하여 재사용성 향상
-- **태그 차이 표시**: 기존 tags 필드 대신 addedTags/removedTags로 더 명확한 변경 사항 표시
-- **일관된 디자인**: 프로젝트 디자인 시스템을 따르는 색상과 스타일링
-- **호버 효과**: 버튼 스케일링과 배경 변화로 인터랙션 개선
+3. **프론트엔드 구현**:
+   - 위키 목록 페이지와 동일한 패턴 적용
+   - 로딩 스켈레톤, 빈 상태, 더 보기 버튼 구현
+   - 스크롤 위치 유지 및 부드러운 로딩 경험
 
-## ✅ 체크리스트
+**기술적 특징**:
+- **키 기반 페이지네이션**: DynamoDB의 `LastEvaluatedKey` 활용
+- **성능 최적화**: 필요한 만큼만 데이터 로드
+- **상태 관리**: 로딩 상태 분리로 UX 개선
+- **일관된 패턴**: 위키 목록과 동일한 구현 방식
 
-새로운 컴포넌트나 페이지를 만들 때 확인사항:
-
-- [ ] CSS 변수 사용 (`var(--ui-*)`)
-- [ ] Iconify 아이콘 사용 (`@iconify/vue`)
-- [ ] 표준 레이아웃 패턴 적용
-- [ ] 반응형 디자인 고려
-- [ ] 다크 모드 지원
-- [ ] 적절한 트랜지션 효과
-- [ ] 일관된 간격 및 패딩
-- [ ] 접근성 고려 (키보드 네비게이션, 스크린 리더 등)
-- [ ] 컴포넌트 분리 및 재사용성 고려
-
-# 룰
-이 페이지는 최근 변경 사항 및 업데이트 내역을 작성하는 페이지가 **아닙니다**.
+**사용자 경험**:
+- ✅ 대용량 히스토리 데이터 효율적 로딩
+- ✅ 스크롤 위치 유지
+- ✅ 로딩 상태 시각적 피드백
+- ✅ 반응형 디자인 적용
 
 description:
 globs:

@@ -4,6 +4,7 @@ import { deleteWikiHistoriesByWikiId, deleteWikiHistory, getLatestWikiHistory, g
 import { getContentDiff, getWikiContentHash, getWikiContentSize } from "../../utils/wiki";
 import { deleteWikiContributor, deleteWikiContributorsByWikiId, getWikiContributor, getWikiContributorsByWikiId, setWikiContributor, updateWikiContributor } from "../db/wikiContributor";
 import type { DbResult } from "../type";
+import { removeItemsByWikiId } from "../db/favoritesItem";
 
 export type WikiCreate = { title: string, content: string, tags: string[], author: User };
 export type WikiUpdate = {
@@ -282,7 +283,7 @@ export async function deleteWikiService(wikiId: string, data: WikiDelete): Promi
         addedTags: [],
         removedTags: previousWiki.data.tags,
         isMinor: false,
-        previousVersion: previousWiki.data.id,
+        previousVersion: latestWikiHistory.data.id,
         metadata: {},
         addedCharacters: added,
         removedCharacters: removed,
@@ -470,6 +471,12 @@ export async function _permanantDeleteWikiService(wikiId: string): Promise<DbRes
     const deleteWikiContributorResult = await deleteWikiContributorsByWikiId(wikiId);
     if (!deleteWikiContributorResult.success) {
         return deleteWikiContributorResult;
+    }
+
+    // 4. 위키 즐겨찾기 아이템 삭제
+    const deleteFavoritesItemResult = await removeItemsByWikiId(wikiId);
+    if (!deleteFavoritesItemResult.success) {
+        return deleteFavoritesItemResult;
     }
 
     return { success: true, data: undefined };

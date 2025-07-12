@@ -2,6 +2,7 @@
 const authRequiredPaths = [
     '/wiki/create',
     '/wiki/:id()/edit',
+    '/profile',
 ]
 
 export default defineNuxtRouteMiddleware((to, from) => {

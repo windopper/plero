@@ -1,6 +1,7 @@
 import { getWiki } from "../../db/wiki"
 
 export default defineEventHandler(async (event) => {
+    const { compact } = getQuery(event) as { compact: string }
     const { id } = getRouterParams(event) as { id: string }
     if (!id) {
         throw createError({
@@ -24,5 +25,18 @@ export default defineEventHandler(async (event) => {
             })
         }
     }
+
+    if (compact) {
+        return {
+          success: true,
+          data: {
+            id: result.data.id,
+            title: result.data.title,
+            tags: result.data.tags,
+            updatedAt: result.data.updatedAt,
+          },
+        };
+    }
+
     return result
 })

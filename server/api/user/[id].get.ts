@@ -20,15 +20,6 @@ export default defineEventHandler(async (event) => {
 
     return {
         success: true,
-        data: {
-            id: result.data.id,
-            name: result.data.name,
-            displayName: result.data.displayName,
-            avatar: result.data.avatar,
-            createdAt: result.data.createdAt,
-            updatedAt: result.data.updatedAt,
-            bio: result.data.bio,
-            lastLoginAt: result.data.lastLoginAt,
-        }
+        data: result.data
     }
 })

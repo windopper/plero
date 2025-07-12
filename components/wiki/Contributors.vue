@@ -9,18 +9,21 @@ const props = defineProps({
     }
 })
 
-const firstLetters = computed(() => {
+const maxDisplayCount = 9
+
+const displayedContributors = computed(() => {
     if (!props.contributors) {
         return []
     }
-    return props.contributors.slice(0, 5).map(contributor => contributor.contributorName.charAt(0).toUpperCase());
+    return props.contributors.slice(0, maxDisplayCount);
 })
+
 const remaining = computed(() => {
     if (!props.contributors) {
         return 0
     }
-    return props.contributors.length - firstLetters.value.length;
-})  
+    return Math.max(0, props.contributors.length - maxDisplayCount);
+})
 
 const hoveredContributor = ref<WikiContributor | null>(null)
 const showTooltip = ref(false)
@@ -34,6 +37,10 @@ const handleMouseLeave = () => {
     hoveredContributor.value = null
     showTooltip.value = false
 }
+
+const navigateToProfile = (contributorId: string) => {
+    navigateTo(`/profile/${contributorId}`)
+}
 </script>
 
 <template>
@@ -46,14 +53,14 @@ const handleMouseLeave = () => {
                 {{ props.contributors?.length }}
             </div>
         </div>
-        <div class="relative flex flex-row gap-2 flex-wrap h-12">
-            <div v-for="(contributor, index) in contributors" :key="contributor.id"
-                class="absolute top-0 bg-[var(--ui-bg-muted)] rounded-full w-10 h-10 flex 
+        <div class="relative flex flex-row gap-2 flex-wrap">
+            <div v-for="(contributor, index) in displayedContributors" :key="contributor.id"
+                class="relative bg-[var(--ui-bg-muted)] rounded-full w-10 h-10 flex 
                 items-center justify-center text-lg text-[var(--ui-text-muted)] border-[1px] border-[var(--ui-border-muted)] 
                 hover:border-[var(--ui-primary)] transition-all duration-200 cursor-pointer" 
-                :style="{ left: `${index * 24}px` }"
                 @mouseover="handleMouseOver(contributor)"
-                @mouseleave="handleMouseLeave">
+                @mouseleave="handleMouseLeave"
+                @click="navigateToProfile(contributor.contributorId)">
                 <ProfileBadge :id="contributor.contributorId" />
 
                 <!-- 기여자 통계 표시 툴팁 -->
@@ -85,10 +92,13 @@ const handleMouseLeave = () => {
                     </div>
                 </div>
             </div>
+            
+            <!-- 남은 기여자 수 표시 -->
             <div v-if="remaining > 0"
-                class="absolute top-0 bg-[var(--ui-bg-muted)] rounded-full w-10 h-10 flex 
-                items-center justify-center text-sm text-[var(--ui-text-muted)] border-[1px] border-[var(--ui-border-muted)]"
-                :style="{ left: `${firstLetters.length * 24}px` }">
+                class="bg-[var(--ui-bg-muted)] rounded-full w-10 h-10 flex 
+                items-center justify-center text-sm text-[var(--ui-text-muted)] border-[1px] border-[var(--ui-border-muted)]
+                hover:border-[var(--ui-primary)] transition-all duration-200 cursor-pointer"
+                :title="`나머지 ${remaining}명의 기여자`">
                 +{{ remaining }}
             </div>
         </div>

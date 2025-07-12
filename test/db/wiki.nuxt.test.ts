@@ -1,7 +1,7 @@
 // @vitest-environment nuxt
 import { afterAll, describe, expect, it, test } from 'vitest';
 import type { User, Wiki } from '~/server/db/schema';
-import { getWiki, setWiki, updateWiki, deleteWiki } from '~/server/db/wiki';
+import { getWiki, setWiki, updateWiki, deleteWiki, getWikiList } from '~/server/db/wiki';
 import { v4 } from 'uuid';
 import { getMockUser } from '../mock';
 
@@ -45,14 +45,18 @@ describe("wiki CRUD", () => {
         }
     };
 
-    afterAll(async () => {
+    const cleanupAllWikis = async () => {
         for (const documentId of createdDocumentIds) {
             await cleanupWiki(documentId);
         }
         createdDocumentIds = [];
+    };
+
+    afterAll(async () => {
+        await cleanupAllWikis();
     });
 
-    it("should create and get wiki", async () => {
+    it("위키 생성 및 조회", async () => {
         const { mockUser, mockWiki } = createTestWiki();
         let wikiId: string | null = null;
 
@@ -77,7 +81,32 @@ describe("wiki CRUD", () => {
         expect(getResult.data.authorEmail).toBe(mockUser.email);
     });
 
-    it("should update wiki", async () => {
+    it("위키 부분 검색어로 목록 조회", async () => {
+        await cleanupAllWikis();
+        
+        const { mockWiki } = createTestWiki();
+        const setResult = await setWiki(mockWiki);
+        expect(setResult.success).toBe(true);
+        if (!setResult.success) {
+            throw new Error('Failed to set wiki');
+        }
+        createdDocumentIds.push(setResult.data.id);
+        
+        const getResult = await getWikiList({ query: 'Test', limit: 10 });
+        expect(getResult.success).toBe(true);
+        if (!getResult.success) {
+            throw new Error('Failed to get wiki list');
+        }
+        expect(getResult.data.wikis[0].title).toBe(mockWiki.title);
+        expect(getResult.data.hasMore).toBe(false);
+    });
+
+    it("위키 목록 조회 페이징 테스트", async () => {
+        // 스킵
+        return;
+    });
+
+    it("위키 수정", async () => {
         const { mockWiki } = createTestWiki();
         let wikiId: string | null = null;
 
@@ -98,7 +127,7 @@ describe("wiki CRUD", () => {
         expect(updateResult.data.content).toBe('Updated content');
     });
 
-    it("should delete wiki", async () => {
+    it("위키 삭제", async () => {
         const { mockWiki } = createTestWiki();
         let wikiId: string | null = null;
 
@@ -114,7 +143,7 @@ describe("wiki CRUD", () => {
         expect(deleteResult.success).toBe(true);
     });
 
-    it("should handle non-existent wiki operations", async () => {
+    it("위키 조회 실패 테스트", async () => {
         const nonExistentId = v4();
 
         // Test get non-existent

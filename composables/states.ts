@@ -96,3 +96,8 @@ export const useWikiRevert = (wikiId: string | string[]) => {
         confirmRevert
     }
 }
+
+// 어드민 패널 상태 관리
+export const useAdminPanelStore = () => useState('adminPanel', () => ({
+    visible: false
+}))

@@ -6,6 +6,8 @@ import { MdPreview } from 'md-editor-v3'
 import Tags from '~/components/wiki/Tags.vue'
 import ContentHeader from '~/components/common/ContentHeader.vue'
 import ContentBody from '~/components/common/ContentBody.vue'
+import NavigationTitle from '~/components/common/NavigationTitle.vue';
+import WikiPublishButton from '~/components/wiki/WikiPublishButton.vue';
 
 const route = useRoute()
 const id = route.params.id
@@ -26,6 +28,7 @@ if (!response.value?.data) {
 const content = ref(response.value.data.content)
 const title = ref(response.value.data.title)
 const starCount = ref(starData.value.data.starCount)
+const isPublished = ref(response.value.data.isPublished)
 
 // 포맷된 업데이트 시간
 const latestUpdate = computed(() => {
@@ -51,39 +54,34 @@ const navigateToHistory = () => {
     navigateTo(`/wiki/${id}/history`)
 }
 
-const navigateToHome = () => {
-    navigateTo('/')
+// 공개 상태 업데이트 핸들러
+const handlePublishUpdate = (newIsPublished) => {
+    isPublished.value = newIsPublished
 }
+
 </script>
 
 <template>
     <!-- 상단 헤더 -->
     <ContentHeader>
         <!-- 왼쪽: 네비게이션 -->
-        <div class="flex items-center gap-2 text-sm">
-            <button @click="navigateToHome"
-                class="flex items-center gap-2 text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors duration-200 group">
-                <Icon icon="material-symbols:home-outline" width="20" height="20"
-                    class="group-hover:scale-110 transition-transform duration-200" />
-                <span class="font-medium">홈</span>
-            </button>
-            <div class="ml-2 h-6 w-px bg-[var(--ui-border)]"></div>
-            <h1 class="ml-2 text-lg font-semibold text-[var(--ui-text)] truncate">{{ title }}</h1>
-        </div>
+        <NavigationTitle :title="response.data.title" backButton backButtonIcon="material-symbols:home-outline"
+            backButtonText="홈" />
 
         <!-- 오른쪽: 액션 버튼들 -->
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-3 flex-wrap">
             <StarButton :wiki-id="id" :initial-star-count="starCount" />
             <button @click="navigateToHistory"
-                class="flex items-center gap-2 px-3 py-2 text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] border border-[var(--ui-border)] rounded-lg hover:bg-[var(--ui-bg-muted)] transition-all duration-200">
+                class="action-button text-[var(--ui-text-muted)] hover:text-[var(--ui-text)]">
                 <Icon icon="material-symbols:history" width="16" height="16" />
                 <span class="text-sm font-medium">변경 기록</span>
             </button>
             <button @click="navigateToEdit"
-                class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[var(--ui-primary)] to-[var(--ui-primary-muted)] text-white rounded-lg hover:from-[var(--ui-primary-muted)] hover:to-[var(--ui-primary-elevated)] transition-all duration-200 shadow-md hover:shadow-lg">
+                class="action-button bg-gradient-to-r from-[var(--ui-primary)] to-[var(--ui-primary-muted)] text-white hover:from-[var(--ui-primary-muted)] hover:to-[var(--ui-primary-elevated)]">
                 <Icon icon="material-symbols:edit" width="16" height="16" />
                 <span class="text-sm font-medium">편집</span>
             </button>
+            <WikiPublishButton :is-published="isPublished" :wiki-id="id" :wiki-title="response.data.title" @update:is-published="handlePublishUpdate" />   
         </div>
     </ContentHeader>
 

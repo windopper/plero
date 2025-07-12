@@ -25,6 +25,12 @@
     --ui-primary-elevated: var(--color-indigo-600);
     --ui-primary-accented: var(--color-indigo-700);
     --ui-primary-inverted: var(--color-indigo-800);
+
+    --ui-secondary: var(--color-violet-400);
+    --ui-secondary-muted: var(--color-violet-500);
+    --ui-secondary-elevated: var(--color-violet-600);
+    --ui-secondary-accented: var(--color-violet-700);
+    --ui-secondary-inverted: var(--color-violet-800);
 }
   
 .dark {
@@ -51,4 +57,22 @@
     --ui-primary-elevated: var(--color-indigo-600);
     --ui-primary-accented: var(--color-indigo-700);
     --ui-primary-inverted: var(--color-indigo-800);
+
+    --ui-secondary: var(--color-violet-400);
+    --ui-secondary-muted: var(--color-violet-500);
+    --ui-secondary-elevated: var(--color-violet-600);
+    --ui-secondary-accented: var(--color-violet-700);
+    --ui-secondary-inverted: var(--color-violet-800);
+}
+
+.action-button {
+    @apply flex items-center gap-2 px-4 py-2 rounded-lg shadow-sm transition-all duration-200 cursor-pointer;
+}
+
+.action-button:hover {
+    @apply bg-[var(--ui-bg-elevated)];
+}
+
+.action-button:disabled {
+    @apply opacity-50 cursor-not-allowed;
 }

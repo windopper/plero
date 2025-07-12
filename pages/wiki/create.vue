@@ -3,6 +3,7 @@ import Editor from '~/components/wiki/Editor.vue'
 import ContentHeader from '~/components/common/ContentHeader.vue'
 import ContentBody from '~/components/common/ContentBody.vue'
 import { Icon } from '@iconify/vue'
+import NavigationTitle from '~/components/common/NavigationTitle.vue';
 
 const text = ref('')
 const title = ref('')
@@ -55,16 +56,7 @@ onUnmounted(() => {
     <!-- 상단 헤더 -->
     <ContentHeader>
         <!-- 왼쪽: 뒤로가기 -->
-        <div class="flex items-center">
-            <button @click="navigateTo('/')"
-                class="flex items-center gap-2 text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors duration-200 group">
-                <Icon icon="material-symbols:arrow-back" width="20" height="20"
-                    class="group-hover:scale-110 transition-transform duration-200" />
-                <span class="font-medium">뒤로가기</span>
-            </button>
-            <div class="ml-4 h-6 w-px bg-[var(--ui-border)]"></div>
-            <h1 class="ml-4 text-lg font-semibold text-[var(--ui-text)]">새 위키 만들기</h1>
-        </div>
+        <NavigationTitle title="새 위키 만들기" backButton />
 
         <!-- 오른쪽: 생성 버튼 -->
         <div class="flex items-center">

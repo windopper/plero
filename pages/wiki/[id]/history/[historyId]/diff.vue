@@ -4,13 +4,13 @@ import { MdPreview } from 'md-editor-v3';
 import { Icon } from '@iconify/vue';
 import ContentHeader from '~/components/common/ContentHeader.vue';
 import ContentBody from '~/components/common/ContentBody.vue';
+import NavigationTitle from '~/components/common/NavigationTitle.vue';
 
 const route = useRoute()
 const id = route.params.id
 const historyId = route.params.historyId
 
 const { data: response } = await useFetch(`/api/wiki/${id}/history/${historyId}/diff`)
-
 // 뒤로가기 함수들
 const navigateToHistory = () => {
     navigateTo(`/wiki/${id}/history`)
@@ -29,26 +29,17 @@ const navigateToVersion = () => {
     <!-- 상단 헤더 -->
     <ContentHeader>
         <!-- 왼쪽: 브레드크럼 -->
-        <div class="flex items-center gap-2 text-sm">
-            <button @click="navigateToHistory"
-                class="flex items-center gap-2 text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors duration-200 group">
-                <Icon icon="material-symbols:arrow-back" width="20" height="20"
-                    class="group-hover:scale-110 transition-transform duration-200" />
-                <span class="font-medium">변경 기록</span>
-            </button>
-            <div class="ml-2 h-6 w-px bg-[var(--ui-border)]"></div>
-            <h1 class="ml-2 text-lg font-semibold text-[var(--ui-text)]">변경 사항 비교</h1>
-        </div>
+        <NavigationTitle title="변경 사항 비교" backButton :navigatePath="`/wiki/${id}/history/${historyId}`" />
 
         <!-- 오른쪽: 액션 버튼들 -->
         <div class="flex items-center gap-3">
             <button @click="navigateToVersion"
-                class="flex items-center gap-2 px-3 py-2 text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] border border-[var(--ui-border)] rounded-lg hover:bg-[var(--ui-bg-muted)] transition-all duration-200">
+                class="action-button text-[var(--ui-text-muted)] hover:text-[var(--ui-text)]">
                 <Icon icon="material-symbols:visibility" width="16" height="16" />
                 <span class="text-sm font-medium">이 버전 보기</span>
             </button>
             <button @click="navigateToWiki"
-                class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[var(--ui-primary)] to-[var(--ui-primary-muted)] text-white rounded-lg hover:from-[var(--ui-primary-muted)] hover:to-[var(--ui-primary-elevated)] transition-all duration-200 shadow-md hover:shadow-lg">
+                class="action-button bg-gradient-to-r from-[var(--ui-primary)] to-[var(--ui-primary-muted)] text-white hover:from-[var(--ui-primary-muted)] hover:to-[var(--ui-primary-elevated)]">
                 <Icon icon="material-symbols:article" width="16" height="16" />
                 <span class="text-sm font-medium">현재 위키</span>
             </button>

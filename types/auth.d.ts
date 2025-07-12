@@ -1,14 +1,24 @@
+import type { User as AuthUser } from "#auth-utils";
+
 declare module '#auth-utils' {
-    interface User {
-        provider: string;
-        avatar: string;
+    interface User extends AuthUser {
+        id: string;
         name: string;
         email: string;
-        login: string;
-        loggedInAt: string;
-        loggedOutAt: string | null;
-        loggedIn: boolean;
-        loggedOut: boolean;
+        avatar: string;
+        provider: string;
+        role: string;
+        isActive: boolean;
+        createdAt: number;
+        updatedAt: number;
+        loginCount: number;
+        preferences: {
+            theme: string;
+            language: string;
+            notifications: boolean;
+            emailNotifications: boolean;
+        };
+        metadata: Record<string, any>;
     }
 }
 

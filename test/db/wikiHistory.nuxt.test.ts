@@ -1,7 +1,7 @@
 // @vitest-environment nuxt
 import { afterAll, afterEach, describe, expect, it, test,  } from 'vitest';
 import type { User, Wiki, WikiHistory } from '~/server/db/schema';
-import { deleteWikiHistory, getWikiHistory, setWikiHistory, updateWikiHistory } from '~/server/db/wikiHistory';
+import { deleteWikiHistory, getWikiHistoriesByUserId, getWikiHistory, setWikiHistory, updateWikiHistory } from '~/server/db/wikiHistory';
 import { v4 } from 'uuid';
 
 describe("wiki history CRUD", () => {
@@ -32,6 +32,8 @@ describe("wiki history CRUD", () => {
             metadata: {},
             addedCharacters: 4,
             removedCharacters: 0,
+            addedTags: [],
+            removedTags: [],
         };
 
         return { testWikiId, testUserId, mockWiki };
@@ -54,7 +56,7 @@ describe("wiki history CRUD", () => {
         createdDocumentIds = [];
     });
 
-    it("should create and get wiki history", async () => {
+    it("위키 기록 생성 및 조회", async () => {
         const { testWikiId, mockWiki } = createTestWikiHistory();
 
         const setResult = await setWikiHistory(mockWiki);
@@ -73,9 +75,25 @@ describe("wiki history CRUD", () => {
         }
     });
 
-    it("should update wiki history", async () => {
-        const { testWikiId, mockWiki } = createTestWikiHistory();
+    it("유저 아이디로 위키 기록 조회", async () => {
+        const { testWikiId, mockWiki, testUserId } = createTestWikiHistory();
+        const setResult = await setWikiHistory(mockWiki);
+        expect(setResult.success).toBe(true);
+        if (!setResult.success) {
+            throw new Error('Failed to set wiki history');
+        }
+        createdDocumentIds.push(setResult.data.id);
 
+        const getResult = await getWikiHistoriesByUserId(testUserId);
+        expect(getResult.success).toBe(true);
+        if (!getResult.success) {
+            throw new Error('Failed to get wiki histories by user id');
+        }
+        expect(getResult.data.length).toBe(1);
+    });
+
+    it("위키 기록 수정", async () => {
+        const { testWikiId, mockWiki } = createTestWikiHistory();
 
         const setResult = await setWikiHistory(mockWiki);
         expect(setResult.success).toBe(true);
@@ -92,7 +110,7 @@ describe("wiki history CRUD", () => {
         }   
     });
 
-    it("should delete wiki history", async () => {
+    it("위키 기록 삭제", async () => {
         const { testWikiId, mockWiki } = createTestWikiHistory();
 
         // Create wiki history
@@ -115,7 +133,7 @@ describe("wiki history CRUD", () => {
         expect(getResult.success).toBe(false);
     });
 
-    it("should handle non-existent wiki history operations", async () => {
+    it("위키 기록 조회 실패 테스트", async () => {
         const { mockWiki } = createTestWikiHistory();
         const nonExistentId = v4();
 
