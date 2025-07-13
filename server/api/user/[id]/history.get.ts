@@ -44,7 +44,6 @@ export default defineEventHandler(async (event) => {
     const wikisMap = new Map(wikisResult.data.map((wiki) => [wiki.id, wiki]));
     const histories = result.data.histories.map((history) => {
         const wiki = wikisMap.get(history.wikiId);
-        console.log(wiki)
         if (!wiki) return { ...history, isPrivate: true };
         if (!wiki.isPublished && wiki.authorId !== currentUser.user?.id) return { ...history, isPrivate: true };
         return { ...history, isPrivate: false };

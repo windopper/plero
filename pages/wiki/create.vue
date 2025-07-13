@@ -51,6 +51,11 @@ onMounted(() => {
 onUnmounted(() => {
     document.removeEventListener('keydown', handleKeyDown)
 })
+
+const applyParsedWiki = (parsedWiki) => {
+    title.value = parsedWiki.title
+    text.value = parsedWiki.content
+}
 </script>
 
 <template>
@@ -61,7 +66,7 @@ onUnmounted(() => {
 
         <!-- 오른쪽: 생성 버튼 -->
         <div class="flex items-center gap-2">
-            <WikiAIGenerateButton />
+            <WikiAIGenerateButton @apply-parsed-wiki="applyParsedWiki" />
             <button @click="createWiki" :disabled="createLoading"
                 class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[var(--ui-primary)] to-[var(--ui-primary-muted)] text-white rounded-lg hover:from-[var(--ui-primary-muted)] hover:to-[var(--ui-primary-elevated)] transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
                 <Icon v-if="!createLoading" icon="material-symbols:add" width="18" height="18" />
