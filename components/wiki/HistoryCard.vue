@@ -6,6 +6,7 @@ import type { WikiHistory } from '~/server/db/schema';
 interface Props {
   history: WikiHistory;
   wikiId: string | string[];
+  hideActionButtons?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -14,6 +15,7 @@ const emit = defineEmits<{
   'view-version': [historyId: string];
   'view-diff': [historyId: string];
   'revert': [history: WikiHistory];
+  'click': [history: WikiHistory];
 }>();
 
 // 변경 유형별 색상 및 아이콘 매핑
@@ -111,10 +113,14 @@ const handleViewDiff = () => {
 const handleRevert = () => {
   emit('revert', props.history)
 }
+
+const handleClick = () => {
+  emit('click', props.history)
+}
 </script>
 
 <template>
-  <div class="group hover:bg-[var(--ui-bg-muted)] transition-all duration-200">
+  <div @click="handleClick" class="group hover:bg-[var(--ui-bg-muted)] transition-all duration-200">
     <div class="p-4 sm:p-6">
       <div class="flex items-start gap-4">
         <!-- 변경 유형 아이콘 -->
@@ -251,7 +257,7 @@ const handleRevert = () => {
 
         <!-- 액션 버튼들 -->
         <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2 flex-shrink-0">
-          <div class="flex items-center gap-1">
+          <div v-if="!hideActionButtons" class="flex items-center gap-1">
             <!-- 이 버전 보기 -->
             <button 
               @click="handleViewVersion"

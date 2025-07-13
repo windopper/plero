@@ -11,24 +11,27 @@ import WikiPublishButton from '~/components/wiki/WikiPublishButton.vue';
 
 const route = useRoute()
 const id = route.params.id
+const { user } = useUserSession()
 
 // 서버사이드에서 위키 정보와 스타 수를 병렬로 로드
-const [{ data: response }, { data: starData }] = await Promise.all([
+const [{ data: response, error: wikiError }, { data: starData, error: starError }] = await Promise.all([
     useFetch(`/api/wiki/${id}`),
     useFetch(`/api/wiki/${id}/stars`)
 ])
 
-if (!response.value?.data) {
-    throw createError({
-        statusCode: 404,
-        statusMessage: '위키 페이지를 찾을 수 없습니다.'
-    })
+// 스타 정보 로드 실패는 기본값으로 처리 (중요하지 않은 정보)
+if (starError.value) {
+    console.warn('스타 정보 로드 실패:', starError.value)
 }
 
 const content = ref(response.value.data.content)
 const title = ref(response.value.data.title)
-const starCount = ref(starData.value.data.starCount)
+const starCount = ref(starData.value?.data?.starCount || 0)
 const isPublished = ref(response.value.data.isPublished)
+
+const isAuthor = computed(() => {
+    return response.value.data.authorId === user.value?.id
+})
 
 // 포맷된 업데이트 시간
 const latestUpdate = computed(() => {
@@ -81,7 +84,8 @@ const handlePublishUpdate = (newIsPublished) => {
                 <Icon icon="material-symbols:edit" width="16" height="16" />
                 <span class="text-sm font-medium">편집</span>
             </button>
-            <WikiPublishButton :is-published="isPublished" :wiki-id="id" :wiki-title="response.data.title" @update:is-published="handlePublishUpdate" />   
+            <WikiPublishButton v-if="isAuthor" :is-published="isPublished" :wiki-id="id" :wiki-title="response.data.title"
+                @update:is-published="handlePublishUpdate" />
         </div>
     </ContentHeader>
 

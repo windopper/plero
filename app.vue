@@ -10,14 +10,7 @@ const authorizePopup = useAuthorizeStore()
 const adminPanel = useAdminPanelStore()
 
 // 사용자 세션 및 권한 확인
-const { data: user } = await useFetch('/api/user/me', {
-  server: false,
-  default: () => null,
-  onResponseError() {
-    // 인증 오류 시 null 반환
-    return null
-  }
-})
+const { user } = useUserSession()
 
 // 관리자 권한 확인
 const isAdmin = computed(() => {
@@ -88,17 +81,12 @@ onUnmounted(() => {
 @import './assets/css/main.css';
 @custom-variant dark (&:where(.dark, .dark *));
 
-* {
-  /* transition: all 0.15s ease; */
-}
-
 html {
   overflow-x: hidden;
 }
 
 body {
   overflow-x: hidden;
-  font-family: 'KakaoSmallSans-Bold', sans-serif;
   margin: 0;
   padding: 0;
   min-height: 100vh;

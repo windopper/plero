@@ -73,7 +73,16 @@ export async function getWikiList(options: {query: string, exclusiveStartKey?: s
             });
         } else {
             // 검색어가 없을 때는 모든 위키를 가져옴
-            command = new ScanCommand(baseParams);
+            command = new ScanCommand({
+                ...baseParams,
+                FilterExpression: "#isPublished = :isPublished",
+                ExpressionAttributeNames: {
+                    "#isPublished": "isPublished"
+                },
+                ExpressionAttributeValues: marshall({
+                    ":isPublished": true
+                }),
+            });
         }
 
         const response = await client.send(command);

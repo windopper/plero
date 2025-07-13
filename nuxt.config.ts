@@ -2,16 +2,6 @@ import tailwindcss from "@tailwindcss/vite";
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-  app: {
-    head: {
-      link: [
-        {
-          rel: "stylesheet",
-          href: "https://fastly.jsdelivr.net/gh/projectnoonnu/2503@1.0/KakaoSmallSans-Bold.woff2",
-        },
-      ],
-    },
-  },
   colorMode: {
     preference: "system",
     fallback: "light",

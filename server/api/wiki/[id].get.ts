@@ -6,7 +6,7 @@ export default defineEventHandler(async (event) => {
     if (!id) {
         throw createError({
             statusCode: 400,
-            statusMessage: "Invalid request"
+            statusMessage: "위키 ID가 제공되지 않았습니다"
         })
     }
 
@@ -16,12 +16,12 @@ export default defineEventHandler(async (event) => {
         if (result.error.message === "Wiki not found") {
             throw createError({
                 statusCode: 404,
-                statusMessage: "Wiki not found"
+                statusMessage: "요청한 위키를 찾을 수 없습니다",
             })
         } else {
             throw createError({
                 statusCode: 500,
-                statusMessage: "Internal server error"
+                statusMessage: "서버 내부 오류가 발생했습니다"
             })
         }
     }
