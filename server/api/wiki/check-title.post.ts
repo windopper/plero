@@ -1,6 +1,11 @@
 import { checkPublicWikiTitleExists } from "../../db/wiki";
 
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async (event): Promise<{
+    success: boolean;
+    data: {
+        exists: boolean;
+    };
+}> => {
     const body = await readBody(event);
     const { title, excludeId } = body;
     

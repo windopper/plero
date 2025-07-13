@@ -1,12 +1,5 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
-@import url('http://fonts.googleapis.com/earlyaccess/nanumgothic.css');
-@font-face {
-    font-family: 'ONE-Mobile-POP';
-    src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2105_2@1.0/ONE-Mobile-POP.woff') format('woff');
-    font-weight: 300;
-    font-style: normal;
-}
 
 @font-face {
     font-family: 'SUITE-Regular';
@@ -38,17 +31,23 @@
     --ui-border-accented: var(--color-neutral-300);
     --ui-border-inverted: var(--color-neutral-900);
 
-    --ui-primary: var(--color-indigo-400);
-    --ui-primary-muted: var(--color-indigo-500);
-    --ui-primary-elevated: var(--color-indigo-600);
-    --ui-primary-accented: var(--color-indigo-700);
-    --ui-primary-inverted: var(--color-indigo-800);
+    --ui-primary: var(--color-indigo-300);
+    --ui-primary-muted: var(--color-indigo-400);
+    --ui-primary-elevated: var(--color-indigo-500);
+    --ui-primary-accented: var(--color-indigo-600);
+    --ui-primary-inverted: var(--color-indigo-700);
 
     --ui-secondary: var(--color-violet-400);
     --ui-secondary-muted: var(--color-violet-500);
     --ui-secondary-elevated: var(--color-violet-600);
     --ui-secondary-accented: var(--color-violet-700);
     --ui-secondary-inverted: var(--color-violet-800);
+
+    --ui-warning: var(--color-yellow-500);
+    --ui-warning-muted: var(--color-yellow-600);
+    --ui-warning-elevated: var(--color-yellow-700);
+    --ui-warning-accented: var(--color-yellow-800);
+    --ui-warning-inverted: var(--color-yellow-900);
 }
   
 .dark {
@@ -76,11 +75,17 @@
     --ui-primary-accented: var(--color-indigo-700);
     --ui-primary-inverted: var(--color-indigo-800);
 
-    --ui-secondary: var(--color-violet-400);
-    --ui-secondary-muted: var(--color-violet-500);
-    --ui-secondary-elevated: var(--color-violet-600);
-    --ui-secondary-accented: var(--color-violet-700);
-    --ui-secondary-inverted: var(--color-violet-800);
+    --ui-secondary: var(--color-violet-500);
+    --ui-secondary-muted: var(--color-violet-600);
+    --ui-secondary-elevated: var(--color-violet-700);
+    --ui-secondary-accented: var(--color-violet-800);
+    --ui-secondary-inverted: var(--color-violet-900);
+
+    --ui-warning: var(--color-yellow-500);
+    --ui-warning-muted: var(--color-yellow-600);
+    --ui-warning-elevated: var(--color-yellow-700);
+    --ui-warning-accented: var(--color-yellow-800);
+    --ui-warning-inverted: var(--color-yellow-900);
 }
 
 .action-button {
@@ -88,7 +93,7 @@
 }
 
 .action-button:hover {
-    @apply bg-[var(--ui-bg-elevated)];
+    /* @apply bg-[var(--ui-bg-elevated)]; */
 }
 
 .action-button:disabled {

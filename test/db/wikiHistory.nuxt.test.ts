@@ -84,12 +84,12 @@ describe("wiki history CRUD", () => {
         }
         createdDocumentIds.push(setResult.data.id);
 
-        const getResult = await getWikiHistoriesByUserId(testUserId);
+        const getResult = await getWikiHistoriesByUserId({ userId: testUserId, limit: 10, sort: 'desc' });
         expect(getResult.success).toBe(true);
         if (!getResult.success) {
             throw new Error('Failed to get wiki histories by user id');
         }
-        expect(getResult.data.length).toBe(1);
+        expect(getResult.data.histories.length).toBe(1);
     });
 
     it("위키 기록 수정", async () => {

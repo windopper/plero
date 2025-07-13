@@ -1,3 +1,4 @@
+import { getWikisByIds } from "~/server/db/wiki";
 import { getWikiHistoriesByUserId } from "~/server/db/wikiHistory";
 
 export default defineEventHandler(async (event) => {

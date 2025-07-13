@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@aws-sdk/lib-dynamodb": "^3.844.0",
+    "@langchain/google-genai": "^0.2.14",
     "@nuxt/content": "^3.6.3",
     "@nuxtjs/mdc": "^0.17.0",
     "@tailwindcss/typography": "^0.5.16",
@@ -20,6 +21,7 @@
     "@vavt/cm-extension": "^1.10.1",
     "better-sqlite3": "^12.2.0",
     "firebase": "^11.10.0",
+    "langchain": "^0.3.29",
     "md-editor-v3": "^5.7.1",
     "nuxt": "^3.17.6",
     "nuxt-auth-utils": "^0.5.20",

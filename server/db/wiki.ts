@@ -4,7 +4,8 @@ import {
     DeleteItemCommand, 
     ScanCommand, 
     QueryCommand,
-    UpdateItemCommand
+    UpdateItemCommand,
+    BatchGetItemCommand
 } from "@aws-sdk/client-dynamodb";
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
 import client from ".";
@@ -44,85 +45,184 @@ export async function getWiki(id: string): Promise<DbResult<Wiki>> {
     }
 }
 
-export async function getWikiList(options: {query: string, exclusiveStartKey?: string, limit: number}): Promise<DbResult<{wikis: Wiki[], lastEvaluatedKey?: string, hasMore: boolean}>> {
+export async function getWikisByIds(ids: string[]): Promise<DbResult<Wiki[]>> {
     try {
-        const { query: searchQuery, exclusiveStartKey, limit: pageLimit } = options;
-        const actualLimit = pageLimit || 10;
-        
-        let command;
-        
-        const baseParams = {
-            TableName: WIKI_COLLECTION,
-            Limit: actualLimit,
-            ...(exclusiveStartKey && { ExclusiveStartKey: JSON.parse(exclusiveStartKey) })
-        };
-        
-        if (searchQuery) {
-            // 검색어가 있을 때는 FilterExpression을 사용하여 title에서 부분 일치 검색
-            command = new ScanCommand({
-                ...baseParams,
-                FilterExpression: "contains(#title, :searchQuery) AND #isPublished = :isPublished",
-                ExpressionAttributeNames: {
-                    "#title": "title",
-                    "#isPublished": "isPublished"
+        const command = new BatchGetItemCommand({
+            RequestItems: {
+                [WIKI_COLLECTION]: {
+                    Keys: ids.map(id => marshall({ id })),
                 },
-                ExpressionAttributeValues: marshall({
-                    ":searchQuery": searchQuery,
-                    ":isPublished": true
-                }),
-            });
-        } else {
-            // 검색어가 없을 때는 모든 위키를 가져옴
-            command = new ScanCommand({
-                ...baseParams,
-                FilterExpression: "#isPublished = :isPublished",
-                ExpressionAttributeNames: {
-                    "#isPublished": "isPublished"
-                },
-                ExpressionAttributeValues: marshall({
-                    ":isPublished": true
-                }),
-            });
-        }
+            },
+        });
 
         const response = await client.send(command);
-        
-        if (!response.Items) {
-            return { 
-                success: true, 
-                data: {
-                    wikis: [],
-                    hasMore: false
-                }
-            };
+
+        if (!response.Responses) {
+            return { success: false, error: { message: "Failed to get wikis" } };
         }
 
-        const wikis = response.Items.map(item => {
+        return { success: true, data: response.Responses[WIKI_COLLECTION].map(item => {
             const data = unmarshall(item);
             const result = WIKI_SCHEMA.safeParse(data);
             return result.success ? result.data : null;
-        }).filter(wiki => wiki !== null) as Wiki[];
-        
-        // 최신 순으로 정렬
-        wikis.sort((a, b) => b.updatedAt - a.updatedAt);
-        
-        const hasMore = !!response.LastEvaluatedKey;
-        const lastEvaluatedKey = response.LastEvaluatedKey ? JSON.stringify(response.LastEvaluatedKey) : undefined;
-        
-        return { 
-            success: true, 
-            data: {
-                wikis,
-                lastEvaluatedKey,
-                hasMore
-            }
-        };
+        }).filter(wiki => wiki !== null) as Wiki[] };
     } catch (error) {
-        return {
-            success: false,
-            error: { message: `Failed to get wiki list: ${error}` },
-        };
+        return { success: false, error: { message: `Failed to get wikis: ${error}` } };
     }
+}
+
+export async function getWikiList(options: {
+  query: string;
+  exclusiveStartKey?: string;
+  limit: number;
+} = {
+  query: "",
+  exclusiveStartKey: undefined,
+  limit: 10,
+}): Promise<
+  DbResult<{ wikis: Wiki[]; lastEvaluatedKey?: string; hasMore: boolean }>
+> {
+  try {
+    const { query: searchQuery, exclusiveStartKey, limit: pageLimit } = options;
+    const actualLimit = pageLimit || 10;
+
+    let command;
+
+    const baseParams = {
+      TableName: WIKI_COLLECTION,
+      Limit: actualLimit,
+      ...(exclusiveStartKey && {
+        ExclusiveStartKey: JSON.parse(exclusiveStartKey),
+      }),
+    };
+
+    if (searchQuery) {
+      // 검색어가 있을 때는 FilterExpression을 사용하여 title에서 부분 일치 검색
+      command = new ScanCommand({
+        ...baseParams,
+        FilterExpression:
+          "contains(#title, :searchQuery) AND #isPublished = :isPublished",
+        ExpressionAttributeNames: {
+          "#title": "title",
+          "#isPublished": "isPublished",
+        },
+        ExpressionAttributeValues: marshall({
+          ":searchQuery": searchQuery,
+          ":isPublished": true,
+        }),
+      });
+    } else {
+      // 검색어가 없을 때는 모든 위키를 가져옴
+      command = new ScanCommand({
+        ...baseParams,
+        FilterExpression: "#isPublished = :isPublished",
+        ExpressionAttributeNames: {
+          "#isPublished": "isPublished",
+        },
+        ExpressionAttributeValues: marshall({
+          ":isPublished": true,
+        }),
+      });
+    }
+
+    const response = await client.send(command);
+
+    if (!response.Items) {
+      return {
+        success: true,
+        data: {
+          wikis: [],
+          hasMore: false,
+        },
+      };
+    }
+
+    const wikis = response.Items.map((item) => {
+      const data = unmarshall(item);
+      const result = WIKI_SCHEMA.safeParse(data);
+      return result.success ? result.data : null;
+    }).filter((wiki) => wiki !== null) as Wiki[];
+
+    const hasMore = !!response.LastEvaluatedKey;
+    const lastEvaluatedKey = response.LastEvaluatedKey
+      ? JSON.stringify(response.LastEvaluatedKey)
+      : undefined;
+
+    return {
+      success: true,
+      data: {
+        wikis,
+        lastEvaluatedKey,
+        hasMore,
+      },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: { message: `Failed to get wiki list: ${error}` },
+    };
+  }
+}
+
+export async function getWikiListByAuthorId(
+  authorId: string,
+  options: {
+    exclusiveStartKey?: string;
+    limit: number;
+    sort?: "asc" | "desc";
+  } = {
+    exclusiveStartKey: undefined,
+    limit: 10,
+    sort: "desc",
+  }
+): Promise<
+  DbResult<{ wikis: Wiki[]; lastEvaluatedKey?: string; hasMore: boolean }>
+> {
+  try {
+    const { exclusiveStartKey, limit: pageLimit, sort } = options;
+    const actualLimit = pageLimit || 10;
+
+    const command = new QueryCommand({
+      TableName: WIKI_COLLECTION,
+      IndexName: "authorId-updatedAt-index",
+      KeyConditionExpression: "authorId = :authorId",
+      ExpressionAttributeValues: marshall({
+        ":authorId": authorId,
+      }),
+      ScanIndexForward: sort === "desc" ? false : true,
+      Limit: actualLimit,
+      ...(exclusiveStartKey && {
+        ExclusiveStartKey: JSON.parse(exclusiveStartKey),
+      }),
+    });
+
+    const response = await client.send(command);
+
+    if (!response.Items) {
+      return {
+        success: true,
+        data: { wikis: [], lastEvaluatedKey: undefined, hasMore: false },
+      };
+    }
+
+    const wikis = response.Items.map((item) => {
+      const data = unmarshall(item);
+      const result = WIKI_SCHEMA.safeParse(data);
+      return result.success ? result.data : null;
+    }).filter((wiki) => wiki !== null) as Wiki[];
+
+    const hasMore = !!response.LastEvaluatedKey;
+    const lastEvaluatedKey = response.LastEvaluatedKey
+      ? JSON.stringify(response.LastEvaluatedKey)
+      : undefined;
+
+    return { success: true, data: { wikis, lastEvaluatedKey, hasMore } };
+  } catch (error) {
+    return {
+      success: false,
+      error: { message: `Failed to get wiki list by author id: ${error}` },
+    };
+  }
 }
 
 export async function getWikiByTag(tag: string): Promise<DbResult<{wikis: {id: string, title: string}[], totalCount: number}>> {

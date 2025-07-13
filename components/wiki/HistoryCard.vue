@@ -3,8 +3,9 @@ import ProfileBadge from '~/components/common/ProfileBadge.vue';
 import { Icon } from '@iconify/vue';
 import type { WikiHistory } from '~/server/db/schema';
 
+
 interface Props {
-  history: WikiHistory;
+  history: WikiHistory & { isPrivate?: boolean };
   wikiId: string | string[];
   hideActionButtons?: boolean;
 }
@@ -86,21 +87,6 @@ const getChangeAmount = (added: number, removed: number) => {
   }
 }
 
-// 상대 시간 포맷
-const getRelativeTime = (timestamp: number) => {
-  const now = Date.now()
-  const diff = now - timestamp
-  const minutes = Math.floor(diff / 60000)
-  const hours = Math.floor(diff / 3600000)
-  const days = Math.floor(diff / 86400000)
-  
-  if (minutes < 1) return '방금 전'
-  if (minutes < 60) return `${minutes}분 전`
-  if (hours < 24) return `${hours}시간 전`
-  if (days < 7) return `${days}일 전`
-  return new Date(timestamp).toLocaleDateString('ko-KR')
-}
-
 // 이벤트 핸들러
 const handleViewVersion = () => {
   emit('view-version', props.history.id)
@@ -120,7 +106,7 @@ const handleClick = () => {
 </script>
 
 <template>
-  <div @click="handleClick" class="group hover:bg-[var(--ui-bg-muted)] transition-all duration-200">
+  <div v-if="!history.isPrivate" @click="handleClick" class="group hover:bg-[var(--ui-bg-muted)] transition-all duration-200">
     <div class="p-4 sm:p-6">
       <div class="flex items-start gap-4">
         <!-- 변경 유형 아이콘 -->
@@ -294,6 +280,12 @@ const handleClick = () => {
           </div>
         </div>
       </div>
+    </div>
+  </div>
+  <div v-else class="p-4 sm:p-6">
+    <div class="flex items-center gap-4"> 
+      <Icon icon="material-symbols:visibility-off" width="32" height="32" class="text-[var(--ui-text-muted)]" />
+      <span class="text-md text-[var(--ui-text-muted)]">비공개 위키</span>
     </div>
   </div>
 </template>

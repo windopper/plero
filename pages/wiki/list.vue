@@ -2,6 +2,7 @@
 import { Icon } from '@iconify/vue'
 import { ref, computed } from 'vue'
 import ContentBody from '~/components/common/ContentBody.vue';
+import type { Wiki } from '~/server/db/schema';
 
 // 페이지 메타 설정
 definePageMeta({
@@ -33,7 +34,14 @@ watch(searchQuery, (newVal) => {
 })
 
 // API 데이터 가져오기 (초기 로드와 검색용)
-const { data: wikiListResponse, pending, refresh } = await useFetch('/api/wiki/list', {
+const { data: wikiListResponse, pending, refresh } = await useFetch<{
+  success: boolean;
+  data: {
+    wikis: Wiki[];
+    hasMore: boolean;
+    lastEvaluatedKey?: string;
+  };
+}>('/api/wiki/list', {
   query: computed(() => ({
     query: debouncedSearch.value,
     exclusiveStartKey: undefined, // 초기 로드는 항상 처음부터
@@ -48,8 +56,8 @@ watch(wikiListResponse, (newResponse) => {
     // 새로운 검색이거나 첫 로드인 경우 교체
     allWikis.value = newResponse.data.wikis
     // 페이지네이션 정보 업데이트
-    if (newResponse.pagination?.lastEvaluatedKey) {
-      exclusiveStartKey.value = newResponse.pagination.lastEvaluatedKey
+    if (newResponse.data.lastEvaluatedKey) {
+      exclusiveStartKey.value = newResponse.data.lastEvaluatedKey
     }
   }
 }, { immediate: true })
@@ -60,10 +68,12 @@ const wikis = computed(() => {
 })
 
 const pagination = computed(() => {
-  return wikiListResponse.value?.pagination || {
-    limit: 30,
-    hasMore: false,
-    lastEvaluatedKey: undefined
+  const hasMore = wikiListResponse.value?.data.hasMore
+  const lastEvaluatedKey = wikiListResponse.value?.data.lastEvaluatedKey
+  return {
+    limit: limit.value,
+    hasMore,
+    lastEvaluatedKey
   }
 })
 
@@ -73,7 +83,14 @@ const loadMore = async () => {
   
   isLoading.value = true
   try {
-    const response = await $fetch('/api/wiki/list', {
+    const response = await $fetch<{
+      success: boolean;
+      data: {
+        wikis: Wiki[];
+        hasMore: boolean;
+        lastEvaluatedKey?: string;
+      };
+    }>('/api/wiki/list', {
       query: {
         query: debouncedSearch.value,
         exclusiveStartKey: exclusiveStartKey.value,
@@ -86,8 +103,8 @@ const loadMore = async () => {
       allWikis.value.push(...response.data.wikis)
       
       // 페이지네이션 정보 업데이트
-      if (response.pagination?.lastEvaluatedKey) {
-        exclusiveStartKey.value = response.pagination.lastEvaluatedKey
+      if (response.data.lastEvaluatedKey) {
+        exclusiveStartKey.value = response.data.lastEvaluatedKey
       } else {
         exclusiveStartKey.value = undefined
       }

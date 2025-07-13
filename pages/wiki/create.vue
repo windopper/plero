@@ -4,6 +4,7 @@ import ContentHeader from '~/components/common/ContentHeader.vue'
 import ContentBody from '~/components/common/ContentBody.vue'
 import { Icon } from '@iconify/vue'
 import NavigationTitle from '~/components/common/NavigationTitle.vue';
+import WikiAIGenerateButton from '~/components/wiki/WikiAIGenerateButton.vue';
 
 const text = ref('')
 const title = ref('')
@@ -59,7 +60,8 @@ onUnmounted(() => {
         <NavigationTitle title="새 위키 만들기" backButton />
 
         <!-- 오른쪽: 생성 버튼 -->
-        <div class="flex items-center">
+        <div class="flex items-center gap-2">
+            <WikiAIGenerateButton />
             <button @click="createWiki" :disabled="createLoading"
                 class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[var(--ui-primary)] to-[var(--ui-primary-muted)] text-white rounded-lg hover:from-[var(--ui-primary-muted)] hover:to-[var(--ui-primary-elevated)] transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
                 <Icon v-if="!createLoading" icon="material-symbols:add" width="18" height="18" />

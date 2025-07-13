@@ -32,6 +32,14 @@ const loggedInMenuList = [
         description: '내 프로필 정보 확인'
     },
     {
+        name: '위키 관리',
+        icon: 'material-symbols:edit-document',
+        onClick: () => {
+            navigateTo(`/profile/${user.value?.id}/wiki`);
+        },
+        description: '내 위키 관리'
+    },
+    {
         name: '기록 보기',
         icon: 'material-symbols:history',
         onClick: () => {

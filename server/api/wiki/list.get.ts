@@ -1,6 +1,14 @@
+import { Wiki } from "~/server/db/schema";
 import { getWikiList } from "../../db/wiki";
 
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async (event): Promise<{
+    success: boolean;
+    data: {
+        wikis: Wiki[];
+        hasMore: boolean;
+        lastEvaluatedKey?: string;
+    };
+}> => {
     const { query, exclusiveStartKey, limit } = getQuery(event);
     const result = await getWikiList({
         query: (query as string) || "", 
@@ -18,10 +26,5 @@ export default defineEventHandler(async (event) => {
     return {
         success: true,
         data: result.data,
-        pagination: {
-            limit: Number(limit) || 10,
-            hasMore: result.data.hasMore,
-            lastEvaluatedKey: result.data.lastEvaluatedKey
-        }
     };
 })

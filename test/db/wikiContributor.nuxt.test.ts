@@ -22,6 +22,7 @@ describe("wiki contributor CRUD", () => {
             contributorName: mockUser.name,
             contributorEmail: mockUser.email,
             contributedAt: Date.now(),
+            firstContributedAt: Date.now(),
             linesAdded: 0,
             linesRemoved: 0,
         }

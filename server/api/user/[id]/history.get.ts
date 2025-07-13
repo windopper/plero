@@ -1,8 +1,8 @@
+import { getWikisByIds } from "~/server/db/wiki";
 import { getWikiHistoriesByUserId } from "~/server/db/wikiHistory";
 
 export default defineEventHandler(async (event) => {
     const userId = getRouterParam(event, 'id')
-    console.log(userId)
     if (!userId) {
         throw createError({
             statusCode: 400,
@@ -31,9 +31,28 @@ export default defineEventHandler(async (event) => {
         })
     }
 
+    const currentUser = await getUserSession(event);
+    const wikiIds = new Set(result.data.histories.map((history) => history.wikiId));
+    const wikisResult = await getWikisByIds(Array.from(wikiIds));
+    if (!wikisResult.success) {
+        throw createError({
+            statusCode: 500,
+            statusMessage: wikisResult.error?.message ?? "Internal server error"
+        })
+    }
+
+    const wikisMap = new Map(wikisResult.data.map((wiki) => [wiki.id, wiki]));
+    const histories = result.data.histories.map((history) => {
+        const wiki = wikisMap.get(history.wikiId);
+        console.log(wiki)
+        if (!wiki) return { ...history, isPrivate: true };
+        if (!wiki.isPublished && wiki.authorId !== currentUser.user?.id) return { ...history, isPrivate: true };
+        return { ...history, isPrivate: false };
+    })
+
     return {
         success: true,
-        data: result.data.histories,
+        data: histories,
         pagination: {
             limit: options.limit,
             hasMore: result.data.hasMore,
