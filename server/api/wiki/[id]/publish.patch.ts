@@ -1,5 +1,7 @@
+import { checkAccessWiki } from "~/server/utils/wiki";
 import { getWiki, updateWiki } from "../../../db/wiki";
 import { requireUserSessionForTest } from "../../../utils/testAuth";
+import { User } from "~/server/db/schema";
 
 export default defineEventHandler(async (event) => {
     const { id } = getRouterParams(event) as { id: string };
@@ -28,12 +30,7 @@ export default defineEventHandler(async (event) => {
         });
     }
 
-    if (wiki.data.authorId !== user.id) {   
-        throw createError({
-            statusCode: 403,
-            statusMessage: "You are not the author of this wiki"
-        });
-    }
+    checkAccessWiki(wiki.data, user as User)
 
     const result = await updateWiki(id, {
         isPublished,

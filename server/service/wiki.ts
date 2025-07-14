@@ -5,6 +5,7 @@ import { getContentDiff, getWikiContentHash, getWikiContentSize } from "../../ut
 import { deleteWikiContributor, deleteWikiContributorsByWikiId, getWikiContributor, getWikiContributorsByWikiId, setWikiContributor, updateWikiContributor } from "../db/wikiContributor";
 import type { DbResult } from "../type";
 import { removeItemsByWikiId } from "../db/favoritesItem";
+import { checkAccessWiki } from "../utils/wiki";
 
 export type WikiCreate = { title: string, content: string, tags: string[], author: User };
 export type WikiUpdate = {
@@ -121,6 +122,7 @@ export async function updateWikiService(wikiId: string, data: WikiUpdate): Promi
         return getWikiResult;
     }
     const previousWiki = getWikiResult.data;
+    checkAccessWiki(previousWiki, data.author)
 
     // 기존 위키 히스토리 조회
     const getLatestWikiHistoryResult = await getLatestWikiHistory(wikiId);
@@ -240,6 +242,7 @@ export async function deleteWikiService(wikiId: string, data: WikiDelete): Promi
     if (!previousWiki.success) {
         return previousWiki;
     }
+    checkAccessWiki(previousWiki.data, data.author)
 
     const latestWikiHistory = await getLatestWikiHistory(wikiId);
     if (!latestWikiHistory.success) {

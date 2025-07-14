@@ -7,11 +7,18 @@ import { Icon } from '@iconify/vue';
 
 const route = useRoute();
 const sort = ref<'asc' | 'desc'>('desc');
-const { data } = await useFetch(`/api/user/${route.params.id}/wiki`, {
+const { data, error } = await useFetch(`/api/user/${route.params.id}/wiki`, {
     query: {
         sort,
     },
 });
+
+if (error.value) {
+    throw createError({
+        statusCode: error.value.statusCode,
+        statusMessage: error.value.statusMessage,
+    })
+}
 </script>
 
 <template>

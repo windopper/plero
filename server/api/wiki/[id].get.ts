@@ -1,4 +1,6 @@
+import { checkAccessWiki } from "~/server/utils/wiki"
 import { getWiki } from "../../db/wiki"
+import { User } from "~/server/db/schema"
 
 export default defineEventHandler(async (event) => {
     const { compact } = getQuery(event) as { compact: string }
@@ -10,10 +12,13 @@ export default defineEventHandler(async (event) => {
         })
     }
 
-    const result = await getWiki(id);
+    const [wiki, user] = await Promise.all([
+        getWiki(id),
+        getUserSession(event)
+    ])
     
-    if (!result.success) {
-        if (result.error.message === "Wiki not found") {
+    if (!wiki.success) {
+        if (wiki.error.message === "Wiki not found") {
             throw createError({
                 statusCode: 404,
                 statusMessage: "요청한 위키를 찾을 수 없습니다",
@@ -26,17 +31,22 @@ export default defineEventHandler(async (event) => {
         }
     }
 
+    checkAccessWiki(wiki.data, user.user as User)
+
     if (compact) {
         return {
           success: true,
           data: {
-            id: result.data.id,
-            title: result.data.title,
-            tags: result.data.tags,
-            updatedAt: result.data.updatedAt,
+            id: wiki.data.id,
+            title: wiki.data.title,
+            tags: wiki.data.tags,
+            updatedAt: wiki.data.updatedAt,
           },
         };
     }
 
-    return result
+    return {
+        success: true,
+        data: wiki.data
+    }
 })

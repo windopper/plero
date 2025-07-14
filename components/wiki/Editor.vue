@@ -1,41 +1,46 @@
-<script setup>
+<script setup lang="ts">
 import { MdEditor } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
-import { ref } from 'vue'
+import { ref, nextTick, onMounted, onUnmounted, useTemplateRef } from 'vue'
 import Tags from './Tags.vue'
+import AIEditTooltip from './AIEditTooltip.vue'
 
-const props = defineProps({
-    contentValue: {
-        type: String,
-        required: true
-    },
-    titleValue: {
-        type: String,
-        required: true
-    },
-    tags: {
-        type: Array,
-        required: true
-    }
-})
+const props = defineProps<{
+    contentValue: string
+    titleValue: string
+    tags: string[]
+}>()
 
-const emit = defineEmits(['update:contentValue', 'update:titleValue', 'update:tags'])
+const emit = defineEmits<{
+    'update:contentValue': [value: string]
+    'update:titleValue': [value: string]
+    'update:tags': [value: string[]]
+}>()
 
 const newTag = ref('')
 
-const updateContentValue = (value) => {
+// AI 편집 관련 상태
+const showAITooltip = ref(false)
+const tooltipPosition = ref({ x: 0, y: 0 })
+const selectedText = ref('')
+const selectionRange = ref<Range | null>(null)
+const mdEditorRef = useTemplateRef('mdEditorRef')
+const aiEditTooltipRef = useTemplateRef('aiEditTooltipRef')
+
+const updateContentValue = (value: string) => {
     emit('update:contentValue', value)
 }
 
-const updateTitleValue = (value) => {
-    emit('update:titleValue', value)
+const updateTitleValue = (event: Event) => {
+    const target = event.target as HTMLInputElement
+    emit('update:titleValue', target.value)
 }
 
-const updateTags = (value) => {
+const updateTags = (value: string[]) => {
     emit('update:tags', value)
 }
 
-const removeTag = (tag) => {
+const removeTag = (tag: string) => {
     emit('update:tags', props.tags.filter(t => t !== tag))
 }
 
@@ -47,21 +52,144 @@ const addTag = () => {
     }
 }
 
-const handleTagInput = (event) => {
+const handleTagInput = (event: KeyboardEvent) => {
     if (event.key === 'Enter') {
         event.preventDefault()
         addTag()
     }
 }
 
-const isPleroTag = (tag) => {
+const isPleroTag = (tag: string) => {
     return tag.startsWith('plero:')
 }
+
+// 텍스트 선택 처리
+const handleTextSelection = () => {
+    const selection = window.getSelection()
+    if (!selection || selection.rangeCount === 0) {
+        hideAITooltip()
+        return
+    }
+
+    const range = selection.getRangeAt(0)
+    const text = selection.toString().trim()
+    
+    // 선택된 텍스트가 있고, md-editor 영역 내부인 경우
+    if (text.length > 0 && range.commonAncestorContainer) {
+        const editorElement = document.querySelector('.md-editor')
+        if (editorElement && editorElement.contains(range.commonAncestorContainer)) {
+            selectedText.value = text
+            selectionRange.value = range.cloneRange()
+            
+            // 툴팁 위치 계산
+            const editorElementRect = editorElement.getBoundingClientRect()
+            const rect = range.getBoundingClientRect()
+
+            if (rect.top < 160) {
+                if (editorElementRect.bottom < rect.bottom) {
+                    tooltipPosition.value = {
+                        x: rect.left + (rect.width / 2),
+                        y: editorElementRect.bottom + 100
+                    }
+                } else {
+                    tooltipPosition.value = {
+                        x: rect.left + (rect.width / 2),
+                        y: rect.bottom + 100
+                    }
+                }
+            } else {
+                if (editorElementRect.top < rect.top) {
+                    tooltipPosition.value = {
+                        x: rect.left + (rect.width / 2),    
+                        y: rect.top
+                    }
+                } else {
+                    tooltipPosition.value = {
+                        x: rect.left + (rect.width / 2),    
+                        y: editorElementRect.top
+                    }
+                }
+            }
+
+            showAITooltip.value = true
+        }
+    }
+}
+
+// AI 툴팁 숨기기
+const hideAITooltip = () => {
+    showAITooltip.value = false
+    selectedText.value = ''
+    selectionRange.value = null
+}
+
+// AI 편집 완료 처리
+const handleEditComplete = (editedText: string) => {
+    if (!selectionRange.value) return
+    
+    // 현재 선택된 텍스트를 편집된 텍스트로 교체
+    const selection = window.getSelection()
+    if (!selection) return
+    selection.removeAllRanges()
+    selection.addRange(selectionRange.value)
+    
+    // 선택된 텍스트를 편집된 텍스트로 교체
+    const range = selectionRange.value
+    range.deleteContents()
+    range.insertNode(document.createTextNode(editedText))
+    
+    // 에디터 내용 업데이트
+    nextTick(() => {
+        const editorTextarea = document.querySelector('.md-editor .w-md-editor-text-textarea') as HTMLTextAreaElement
+        if (editorTextarea && editorTextarea.value) {
+            // md-editor의 내용을 직접 업데이트
+            const currentContent = props.contentValue
+            const newContent = currentContent.replace(selectedText.value, editedText)
+            updateContentValue(newContent)
+        }
+    })
+    
+    hideAITooltip()
+}
+
+// 문서 클릭 시 툴팁 숨기기
+const handleDocumentClick = (e: MouseEvent) => {
+    const target = e.target as HTMLElement
+    
+    // aiEditTooltipRef 내부 클릭이면 무시
+    if (aiEditTooltipRef.value && aiEditTooltipRef.value.$el && aiEditTooltipRef.value.$el.contains(target)) {
+        return
+    }
+
+    // 그 외의 경우 툴팁 숨기기
+    if (showAITooltip.value) {
+        hideAITooltip()
+    }
+}
+
+// 이벤트 리스너 등록/해제
+onMounted(() => {
+    // document.addEventListener('mouseup', handleTextSelection)
+    document.addEventListener('scroll', handleTextSelection)
+    document.addEventListener('mousedown', handleDocumentClick)
+    document.addEventListener('selectionchange', handleTextSelection)
+})
+
+onUnmounted(() => {
+    // document.removeEventListener('mouseup', handleTextSelection)
+    document.removeEventListener('scroll', handleTextSelection)
+    document.removeEventListener('mousedown', handleDocumentClick)
+    document.removeEventListener('selectionchange', handleTextSelection)
+})
 </script>
 
 <template>
     <div class="flex flex-col gap-4">
-        <input type="text" :value="titleValue" @input="updateTitleValue($event.target.value)" placeholder="제목을 입력해주세요"
+        <input 
+            type="text" 
+            :value="titleValue" 
+            @input="updateTitleValue"
+            placeholder="제목을 입력해주세요"
             class="text-[var(--ui-text)] bg-[var(--ui-bg)] border border-[var(--ui-border)] rounded-md px-4 py-3 outline-none focus:border-[var(--ui-primary)] transition-colors" />
 
         <!-- 태그 섹션 -->
@@ -91,7 +219,20 @@ const isPleroTag = (tag) => {
             </div>
         </div>
 
-        <MdEditor :model-value="contentValue" @update:model-value="updateContentValue" language="ko" />
+        <MdEditor 
+            ref="mdEditorRef"
+            :model-value="contentValue" 
+            @update:model-value="updateContentValue"
+            language="ko" />
+
+        <!-- AI 편집 툴팁 -->
+        <AIEditTooltip 
+            ref="aiEditTooltipRef"
+            :visible="showAITooltip"
+            :position="tooltipPosition"
+            :selected-text="selectedText"
+            @close="hideAITooltip"
+            @edit-complete="handleEditComplete" />
     </div>
 </template>
 

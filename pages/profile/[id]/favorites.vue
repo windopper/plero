@@ -8,10 +8,13 @@ import { type FavoritesItem, type FavoritesList, type Wiki } from '~/server/db/s
 const route = useRoute();
 const selectedList = ref<FavoritesList | null>(null);
 const isDropdownOpen = ref(false);
-const { data: favoritesList, pending } = await useFetch(`/api/favorites/lists`);
+const isPendingFetchItems = ref(true);
+const { data: favoritesList } = await useFetch(`/api/favorites/lists`);
+
 const items = ref<{ wiki: { id: string, title: string, tags: string[], updatedAt: number }, list: FavoritesItem }[]>([]);
 
 const fetchItems = async (listId: string) => {
+    isPendingFetchItems.value = true;
     const favoriteItem = await $fetch(`/api/favorites/lists/${listId}`);
     const response = await Promise.all(favoriteItem.data.map(async (item: FavoritesItem) => {
         const wiki = await fetchWiki(item.wikiId);
@@ -19,10 +22,11 @@ const fetchItems = async (listId: string) => {
     }));
 
     items.value = response;
+    isPendingFetchItems.value = false;
 };
 
 const fetchWiki = async (wikiId: string) => {
-    const response = await $fetch(`/api/wiki/${wikiId}?compact=true`);
+    const response = await $fetch<any>(`/api/wiki/${wikiId}?compact=true`);
     return response.data as { id: string, title: string, tags: string[], updatedAt: number };
 };
 
@@ -123,6 +127,7 @@ onMounted(() => {
 
                 <div class="grid gap-4">
                     <NuxtLink
+                        v-if="!isPendingFetchItems"
                         v-for="item in items"
                         :key="item.list.id"
                         :to="`/wiki/${item.wiki.id}`"
@@ -161,6 +166,9 @@ onMounted(() => {
                             </div>
                         </div>
                     </NuxtLink>
+                    <div v-else class="flex items-center justify-center p-4">
+                        <Icon icon="mdi:loading" class="w-5 h-5 animate-spin" />
+                    </div>
                 </div>
             </div>
 

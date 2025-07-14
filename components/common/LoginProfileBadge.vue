@@ -85,7 +85,7 @@ const loggedInMenuList = [
 </script>
 
 <template>
-    <div ref="containerTemplateRef" class="relative">
+    <div ref="containerTemplateRef" class="relative flex items-center justify-center">
         <!-- 프로필 버튼 -->
         <button 
             @click="menuOpen = !menuOpen"

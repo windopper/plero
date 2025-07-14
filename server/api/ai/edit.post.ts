@@ -1,11 +1,10 @@
-import { generateWiki, generateWikiStream, UploadedFile } from "~/server/service/ai";
+import { editText, editTextStream, UploadedFile } from "~/server/service/ai";
 import { streamManager } from "~/server/utils/streamManager";
-import { FileManager } from "~/server/utils/fileManager";
-import { writeFileSync } from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 
 export default defineEventHandler(async (event) => {
     try {
+        let originalText: string;
         let instruction: string;
         let stream: boolean;
         let uploadedFiles: UploadedFile[] = [];
@@ -25,10 +24,12 @@ export default defineEventHandler(async (event) => {
                 });
             }
 
-            // instruction과 stream 값 추출
+            // originalText, instruction, stream 값 추출
+            const originalTextField = formData.find(field => field.name === 'originalText');
             const instructionField = formData.find(field => field.name === 'instruction');
             const streamField = formData.find(field => field.name === 'stream');
             
+            originalText = originalTextField?.data?.toString() || '';
             instruction = instructionField?.data?.toString() || '';
             stream = streamField?.data?.toString() === 'true';
 
@@ -53,21 +54,29 @@ export default defineEventHandler(async (event) => {
         } else {
             // JSON 처리 (기존 방식)
             const body = await readBody(event);
+            originalText = body.originalText;
             instruction = body.instruction;
             stream = body.stream;
+        }
+
+        if (!originalText || typeof originalText !== 'string' || originalText.trim().length === 0) {
+            throw createError({
+                statusCode: 400,
+                statusMessage: '편집할 원본 텍스트가 필요합니다.'
+            });
         }
 
         if (!instruction || typeof instruction !== 'string' || instruction.trim().length === 0) {
             throw createError({
                 statusCode: 400,
-                statusMessage: '위키 생성 지시사항이 필요합니다.'
+                statusMessage: '편집 지시사항이 필요합니다.'
             });
         }
 
         // 스트림 요청인 경우
         if (stream) {
             // 새 스트림 세션 생성
-            const sessionId = streamManager.createSession(instruction.trim(), 'wiki');
+            const sessionId = streamManager.createSession(instruction.trim(), 'edit');
             const abortController = streamManager.getAbortController(sessionId);
 
             if (!abortController) {
@@ -98,16 +107,12 @@ export default defineEventHandler(async (event) => {
                     controller.enqueue(encoder.encode(sessionData));
                     
                     try {
-                        const wikiStream = generateWikiStream(
-                            instruction.trim(), 
-                            abortController.signal, 
-                            uploadedFiles.length > 0 ? uploadedFiles : undefined
-                        );
+                        const editStream = editTextStream(originalText.trim(), instruction.trim(), abortController.signal, uploadedFiles);
                         
-                        for await (const chunk of wikiStream) {
+                        for await (const chunk of editStream) {
                             // 다중 중단 조건 확인
                             if (abortController.signal.aborted || isStreamCancelled) {
-                                console.log(`서버에서 스트림 중단 감지 - 루프 탈출 (세션: ${sessionId})`);
+                                console.log(`서버에서 편집 스트림 중단 감지 - 루프 탈출 (세션: ${sessionId})`);
                                 break;
                             }
 
@@ -130,16 +135,16 @@ export default defineEventHandler(async (event) => {
                         }
                         
                         if (!isStreamCancelled && !abortController.signal.aborted) {
-                            console.log(`스트림 정상 종료 (세션: ${sessionId})`);
+                            console.log(`편집 스트림 정상 종료 (세션: ${sessionId})`);
                             streamManager.completeSession(sessionId);
                         } else {
-                            console.log(`스트림 중단 종료 (세션: ${sessionId})`);
+                            console.log(`편집 스트림 중단 종료 (세션: ${sessionId})`);
                             streamManager.cancelSession(sessionId);
                         }
                         
                         controller.close();
                     } catch (error) {
-                        console.error(`서버 스트림 에러 (세션: ${sessionId}):`, error);
+                        console.error(`서버 편집 스트림 에러 (세션: ${sessionId}):`, error);
                         
                         if (error instanceof Error && (error.name === 'AbortError' || error.message.includes('abort'))) {
                             console.log(`서버에서 AbortError 감지 - 정상 중단 (세션: ${sessionId})`);
@@ -148,7 +153,7 @@ export default defineEventHandler(async (event) => {
                             try {
                                 const errorData = `data: ${JSON.stringify({
                                     type: 'error',
-                                    data: '스트림 처리 중 오류가 발생했습니다.'
+                                    data: '편집 스트림 처리 중 오류가 발생했습니다.'
                                 })}\n\n`;
                                 controller.enqueue(encoder.encode(errorData));
                             } catch (enqueueError) {
@@ -163,7 +168,7 @@ export default defineEventHandler(async (event) => {
                 },
                 cancel(reason) {
                     // 클라이언트가 스트림을 취소했을 때 호출됨
-                    console.log(`클라이언트에서 스트림 취소 요청 (세션: ${sessionId}):`, reason);
+                    console.log(`클라이언트에서 편집 스트림 취소 요청 (세션: ${sessionId}):`, reason);
                     isStreamCancelled = true;
                     streamManager.cancelSession(sessionId);
                 }
@@ -172,13 +177,13 @@ export default defineEventHandler(async (event) => {
             return readableStream;
         }
 
-        // 기존 일반 요청 처리
-        const result = await generateWiki(instruction.trim());
+        // 기존 일반 요청 처리 (파일 포함)
+        const result = await editText(originalText.trim(), instruction.trim(), uploadedFiles);
 
         if (!result.success) {
             throw createError({
                 statusCode: 500,
-                statusMessage: result.error?.message || '위키 생성에 실패했습니다.'
+                statusMessage: result.error?.message || '텍스트 편집에 실패했습니다.'
             });
         }
 
@@ -187,10 +192,10 @@ export default defineEventHandler(async (event) => {
             data: result.data
         };
     } catch (error) {
-        console.error('AI wiki generation error:', error);
+        console.error('AI text edit error:', error);
         throw createError({
             statusCode: 500,
             statusMessage: '서버 오류가 발생했습니다.'
         });
     }
-});
+}); 

@@ -18,8 +18,8 @@ class StreamManager {
     }
 
     // 새 세션 생성
-    createSession(instruction: string): string {
-        const sessionId = `wiki_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    createSession(instruction: string, prefix: string = 'ai'): string {
+        const sessionId = `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         const abortController = new AbortController();
         
         const session: StreamSession = {
