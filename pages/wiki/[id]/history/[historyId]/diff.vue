@@ -10,7 +10,15 @@ const route = useRoute()
 const id = route.params.id
 const historyId = route.params.historyId
 
-const { data: response } = await useFetch(`/api/wiki/${id}/history/${historyId}/diff`)
+const { data: response, error } = await useFetch(`/api/wiki/${id}/history/${historyId}/diff`)
+
+if (error.value) {
+    throw createError({
+        statusCode: error.value.statusCode,
+        statusMessage: error.value.statusMessage,
+    })
+}
+
 // 뒤로가기 함수들
 const navigateToHistory = () => {
     navigateTo(`/wiki/${id}/history`)

@@ -8,11 +8,18 @@ import NavigationTitle from '~/components/common/NavigationTitle.vue';
 const route = useRoute()
 const id = route.params.id
 
-const { data: wiki } = await useFetch(`/api/wiki/${id}`)
+const { data: wiki, error } = await useFetch(`/api/wiki/${id}`)
 
-const title = ref(wiki.value.data.title || "")
-const content = ref(wiki.value.data.content || "")
-const tags = ref(wiki.value.data.tags || [])
+if (error.value) {
+    throw createError({
+        statusCode: error.value.statusCode,
+        statusMessage: error.value.statusMessage,
+    })
+}
+
+const title = ref(wiki.value?.data?.title || "")
+const content = ref(wiki.value?.data?.content || "")
+const tags = ref(wiki.value?.data?.tags || [])
 const updateMessage = ref("")
 
 const saveLoading = ref(false)

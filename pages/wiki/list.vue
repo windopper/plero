@@ -47,7 +47,8 @@ const { data: wikiListResponse, pending, refresh } = await useFetch<{
     exclusiveStartKey: undefined, // 초기 로드는 항상 처음부터
     limit: limit.value,
   })),
-  watch: [debouncedSearch, limit] // exclusiveStartKey 제거
+  watch: [debouncedSearch, limit], // exclusiveStartKey 제거
+  server: false,
 })
 
 // 데이터 변경 감지하여 누적

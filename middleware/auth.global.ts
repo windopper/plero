@@ -14,14 +14,14 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
         }
     }
 
-    if (to.matched[0].path.includes(checkAuthorOnNotPublishedWiki)) {
-        const id = to.params.id
-        const { error } = await useFetch(`/api/wiki/${id}`)
-        if (error.value) {
-            throw createError({
-                statusCode: error.value.statusCode,
-                statusMessage: error.value.statusMessage,
-            })
-        }
-    }
+    // if (to.matched[0].path.includes(checkAuthorOnNotPublishedWiki)) {
+    //     const id = to.params.id
+    //     const { error } = await useFetch(`/api/wiki/${id}`)
+    //     if (error.value) {
+    //         throw createError({
+    //             statusCode: error.value.statusCode,
+    //             statusMessage: error.value.statusMessage,
+    //         })
+    //     }
+    // }
 })

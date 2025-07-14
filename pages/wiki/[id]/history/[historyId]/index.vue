@@ -22,7 +22,14 @@ const {
     confirmRevert 
 } = useWikiRevert(id)
 
-const { data: response } = await useFetch(`/api/wiki/${id}/history/${historyId}`)
+const { data: response, error } = await useFetch(`/api/wiki/${id}/history/${historyId}`)
+
+if (error.value) {
+    throw createError({
+        statusCode: error.value.statusCode,
+        statusMessage: error.value.statusMessage,
+    })
+}
 
 // 변경 유형별 색상 및 아이콘 매핑
 const getChangeTypeStyle = (changeType: string) => {

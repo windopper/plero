@@ -8,7 +8,14 @@ import NavigationTitle from '~/components/common/NavigationTitle.vue';
 
 const route = useRoute()
 const id = route.params.id
-const { data: response } = await useFetch(`/api/wiki/${id}/history`)
+const { data: response, error } = await useFetch(`/api/wiki/${id}/history`)
+
+if (error.value) {
+    throw createError({
+        statusCode: error.value.statusCode,
+        statusMessage: error.value.statusMessage,
+    })
+}
 
 // revert 관련 공통 기능 사용
 const { 

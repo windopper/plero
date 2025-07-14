@@ -6,6 +6,10 @@ import type { WikiContributor } from '~/server/db/schema';
 const props = defineProps({
     contributors: {
         type: Array as PropType<WikiContributor[]>,
+    },
+    isLoading: {
+        type: Boolean,
+        default: false,
     }
 })
 
@@ -46,14 +50,24 @@ const navigateToProfile = (contributorId: string) => {
 <template>
     <div class="flex flex-col gap-2">
         <div class="flex flex-row gap-2 items-center">
-            <div class="text-sm text-[var(--ui-text-muted)]">
+            <div class="text-sm text-[var(--ui-text)] font-semibold">
                 기여자
             </div>
-            <div class="text-sm text-[var(--ui-text-muted)] bg-[var(--ui-bg-muted)] rounded-md px-2 py-1">
+            <div v-if="!isLoading" class="text-sm text-[var(--ui-text-muted)] bg-[var(--ui-bg-muted)] rounded-md px-2 py-1">
                 {{ props.contributors?.length }}
             </div>
+            <div v-else class="bg-[var(--ui-bg-muted)] rounded-md px-2 py-1 w-8 h-5 animate-pulse"></div>
         </div>
-        <div class="relative flex flex-row gap-2 flex-wrap">
+        
+        <!-- 로딩 상태 스켈레톤 -->
+        <div v-if="isLoading" class="relative flex flex-row gap-2 flex-wrap">
+            <div v-for="i in 3" :key="i"
+                class="bg-[var(--ui-bg-muted)] rounded-full w-10 h-10 animate-pulse">
+            </div>
+        </div>
+        
+        <!-- 실제 기여자 목록 -->
+        <div v-else class="relative flex flex-row gap-2 flex-wrap">
             <div v-for="(contributor, index) in displayedContributors" :key="contributor.id"
                 class="relative bg-[var(--ui-bg-muted)] rounded-full w-10 h-10 flex 
                 items-center justify-center text-lg text-[var(--ui-text-muted)] border-[1px] border-[var(--ui-border-muted)] 

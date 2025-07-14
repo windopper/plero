@@ -13,30 +13,41 @@ const route = useRoute()
 const id = route.params.id
 const { user } = useUserSession()
 
-// 서버사이드에서 위키 정보와 스타 수를 병렬로 로드
-const [{ data: response, error: wikiError }, { data: starData, error: starError }] = await Promise.all([
-    useFetch(`/api/wiki/${id}`),
-    useFetch(`/api/wiki/${id}/stars`)
-])
+const { data, error } = await useFetch(`/api/wiki/${id}`)
 
-// 스타 정보 로드 실패는 기본값으로 처리 (중요하지 않은 정보)
-if (starError.value) {
-    console.warn('스타 정보 로드 실패:', starError.value)
+if (error.value) {
+    throw createError({
+        statusCode: error.value.statusCode,
+        statusMessage: error.value.statusMessage,
+    })
 }
 
-const content = ref(response.value.data.content)
-const title = ref(response.value.data.title)
-const starCount = ref(starData.value?.data?.starCount || 0)
-const isPublished = ref(response.value.data.isPublished)
+const { data: starData } = useFetch(`/api/wiki/${id}/stars`, {
+    lazy: true,
+    server: false,
+})
+
+const { data: contributorsData } = useFetch(`/api/wiki/${id}/contributors`, {
+    lazy: true,
+    server: false,
+})
+
+const wiki = computed(() => data.value?.data)
+const starCount = computed(() => starData.value?.data?.starCount || 0)
+const contributors = computed(() => contributorsData.value?.data || [])
+
+const content = ref(wiki.value?.content || '')
+const title = ref(wiki.value?.title || '')
+const isPublished = ref(wiki.value?.isPublished || false)
 
 const isAuthor = computed(() => {
-    return response.value.data.authorId === user.value?.id
+    return wiki.value?.authorId === user.value?.id
 })
 
 // 포맷된 업데이트 시간
 const latestUpdate = computed(() => {
-    if (!response.value?.data?.updatedAt) return ''
-    return new Date(response.value.data.updatedAt).toLocaleString('ko-KR', {
+    if (!wiki.value?.updatedAt) return ''
+    return new Date(wiki.value.updatedAt).toLocaleString('ko-KR', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
@@ -44,9 +55,6 @@ const latestUpdate = computed(() => {
         minute: '2-digit'
     })
 })
-
-// 기여자 정보 가져오기
-const { data: contributors } = await useFetch(`/api/wiki/${id}/contributors`)
 
 // 네비게이션 함수들
 const navigateToEdit = () => {
@@ -68,7 +76,7 @@ const handlePublishUpdate = (newIsPublished) => {
     <!-- 상단 헤더 -->
     <ContentHeader>
         <!-- 왼쪽: 네비게이션 -->
-        <NavigationTitle :title="response.data.title" backButton backButtonIcon="material-symbols:home-outline"
+        <NavigationTitle :title="wiki?.title || ''" backButton backButtonIcon="material-symbols:home-outline"
             backButtonText="홈" />
 
         <!-- 오른쪽: 액션 버튼들 -->
@@ -84,14 +92,14 @@ const handlePublishUpdate = (newIsPublished) => {
                 <Icon icon="material-symbols:edit" width="16" height="16" />
                 <span class="text-sm font-medium">편집</span>
             </button>
-            <WikiPublishButton v-if="isAuthor" :is-published="isPublished" :wiki-id="id" :wiki-title="response.data.title"
-                @update:is-published="handlePublishUpdate" />
+            <WikiPublishButton v-if="isAuthor" :is-published="isPublished" :wiki-id="id"
+                :wiki-title="wiki?.title || ''" @update:is-published="handlePublishUpdate" />
         </div>
     </ContentHeader>
 
     <!-- 태그 영역 -->
     <div class="flex items-center flex-wrap gap-2 px-8 pt-4 max-w-7xl mx-auto">
-        <Tags v-for="tag in response.data.tags" :key="tag" :tag="tag" :removeable="false" :enable-tag-link="true" />
+        <Tags v-for="tag in wiki?.tags || []" :key="tag" :tag="tag" :removeable="false" :enable-tag-link="true" />
     </div>
 
     <!-- 메인 컨텐츠 -->
@@ -163,10 +171,10 @@ const handlePublishUpdate = (newIsPublished) => {
                     </div>
 
                     <!-- 기여자 카드 -->
-                    <div v-if="contributors?.data && contributors.data.length > 0"
+                    <div
                         class="bg-[var(--ui-bg)] border border-[var(--ui-border)] rounded-xl shadow-sm p-6">
-                        <h3 class="text-sm font-semibold text-[var(--ui-text)] mb-4">기여자</h3>
-                        <Contributors :contributors="contributors.data" />
+                        <Contributors v-if="contributors && contributors.length > 0" :contributors="contributors" />
+                        <Contributors v-else :contributors="[]" :is-loading="true" />
                     </div>
 
                     <!-- 문서 정보 카드 -->
@@ -186,7 +194,7 @@ const handlePublishUpdate = (newIsPublished) => {
                                         class="text-xs font-medium text-[var(--ui-text-muted)] uppercase tracking-wide">
                                         생성일</div>
                                     <div class="font-medium text-[var(--ui-text)]">
-                                        {{ new Date(response?.data?.createdAt).toLocaleDateString('ko-KR') }}
+                                        {{ new Date(wiki?.createdAt).toLocaleDateString('ko-KR') }}
                                     </div>
                                 </div>
                             </div>
