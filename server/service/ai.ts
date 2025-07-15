@@ -3,6 +3,8 @@ import { ChatPromptTemplate, PromptTemplate } from "@langchain/core/prompts";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { wikiPrompt } from "./prompts/wiki";
+import { editPrompt } from "./prompts/edit";
 
 // 파일 타입 정의
 export interface UploadedFile {
@@ -19,24 +21,6 @@ const gemini25Flash = new ChatGoogleGenerativeAI({
     temperature: 0.7,
     streaming: true, // 스트리밍 활성화
 });
-
-const geminiProVision = new ChatGoogleGenerativeAI({
-    model: "gemini-pro-vision",
-    apiKey: process.env.NUXT_GEMINI_API_KEY,
-    temperature: 0.7,
-    streaming: true, // 스트리밍 활성화
-});
-
-// Jinja2 템플릿을 로드하는 함수
-function loadPromptTemplate(templateName: string = 'wiki'): string {
-    try {
-        const templatePath = join(process.cwd(), `server/service/prompts/${templateName}.jinja2`);
-        return readFileSync(templatePath, 'utf-8');
-    } catch (error) {
-        console.error(`Failed to load ${templateName} prompt template:`, error);
-        throw error;
-    }
-}
 
 // Gemini 멀티모달을 위한 파일 콘텐츠 준비
 async function prepareMultimodalContent(instruction: string, files: UploadedFile[]) {
@@ -91,8 +75,7 @@ async function prepareMultimodalContent(instruction: string, files: UploadedFile
 export async function generateWiki(instruction: string) {
     try {
         // 템플릿 로드 및 변수 치환
-        const template = loadPromptTemplate('wiki');
-        const prompt = template.replace(/\{\{\s*instruction\s*\}\}/g, instruction);
+        const prompt = wikiPrompt.replace(/\{\{\s*instruction\s*\}\}/g, instruction);
 
         // AI에게 프롬프트 전송
         const chatPromptTemplate = ChatPromptTemplate.fromMessages([
@@ -129,7 +112,7 @@ export async function* generateWikiStream(instruction: string, abortSignal?: Abo
         let messages: any[];
         if (files && files.length > 0) {
             // 템플릿 로드하여 시스템 메시지 구성
-            const template = loadPromptTemplate('wiki');
+            const template = wikiPrompt;
             const systemMessage = "당신은 전문적인 위키 작성자입니다. 첨부된 파일들의 내용을 분석하여 정확한 형식의 위키를 작성해주세요.";
             
             // 멀티모달 콘텐츠 생성
@@ -142,8 +125,7 @@ export async function* generateWikiStream(instruction: string, abortSignal?: Abo
             ];
         } else {
             // 파일이 없는 경우 기존 방식 사용
-            const template = loadPromptTemplate('wiki');
-            const prompt = template.replace(/\{\{\s*instruction\s*\}\}/g, instruction);
+            const prompt = wikiPrompt.replace(/\{\{\s*instruction\s*\}\}/g, instruction);
             
             messages = [
                 new SystemMessage("당신은 전문적인 위키 작성자입니다. 주어진 지침에 따라 정확한 형식으로 위키를 작성해주세요."),
@@ -229,8 +211,7 @@ export async function editText(originalText: string, instruction: string, files?
             ];
         } else {
             // 파일이 없는 경우 기존 방식 사용
-            const template = loadPromptTemplate('edit');
-            const prompt = template
+            const prompt = editPrompt
                 .replace(/\{\{\s*original_text\s*\}\}/g, originalText)
                 .replace(/\{\{\s*instruction\s*\}\}/g, instruction);
 
@@ -286,8 +267,7 @@ export async function* editTextStream(originalText: string, instruction: string,
             ];
         } else {
             // 파일이 없는 경우 기존 방식 사용
-            const template = loadPromptTemplate('edit');
-            const prompt = template
+            const prompt = editPrompt
                 .replace(/\{\{\s*original_text\s*\}\}/g, originalText)
                 .replace(/\{\{\s*instruction\s*\}\}/g, instruction);
 

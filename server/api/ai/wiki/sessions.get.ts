@@ -18,4 +18,4 @@ export default defineEventHandler(async (event) => {
             statusMessage: '세션 상태 조회 중 오류가 발생했습니다.'
         });
     }
-}); 
+});
