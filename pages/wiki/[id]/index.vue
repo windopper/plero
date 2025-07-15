@@ -3,6 +3,7 @@ import { Icon } from '@iconify/vue';
 import Contributors from '~/components/wiki/Contributors.vue';
 import StarButton from '~/components/wiki/StarButton.vue';
 import { MdPreview } from 'md-editor-v3'
+import 'md-editor-v3/lib/style.css'
 import Tags from '~/components/wiki/Tags.vue'
 import ContentHeader from '~/components/common/ContentHeader.vue'
 import ContentBody from '~/components/common/ContentBody.vue'
@@ -121,8 +122,7 @@ const handlePublishUpdate = (newIsPublished) => {
                         </div>
 
                         <!-- 마크다운 컨텐츠 -->
-                        <MdPreview :modelValue="content" language="en"
-                            class="break-words max-w-none prose md:prose-base prose-sm prose-zinc dark:prose-invert" />
+                        <MdPreview :modelValue="content" language="en" />
                     </div>
                 </div>
             </div>
@@ -236,6 +236,8 @@ const handlePublishUpdate = (newIsPublished) => {
 </template>
 
 <style scoped>
+@import '~/assets/css/main.css';
+
 /* 스크롤바 스타일링 */
 ::-webkit-scrollbar {
     width: 8px;
