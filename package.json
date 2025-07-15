@@ -21,9 +21,6 @@
     "db:dev:test": "tsx scripts/test-db-connection.ts --config=drizzle-dev.config.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-rds-data": "^3.844.0",
-    "@aws-sdk/lib-dynamodb": "^3.844.0",
-    "@aws-sdk/rds-signer": "^3.844.0",
     "@langchain/google-genai": "^0.2.14",
     "@neondatabase/serverless": "^1.0.1",
     "@nuxt/content": "^3.6.3",

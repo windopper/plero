@@ -19,7 +19,6 @@ const emit = defineEmits<{
 
 const newTag = ref('')
 
-
 // AI 편집 관련 상태
 const showAITooltip = ref(false)
 const tooltipPosition = ref({ x: 0, y: 0 })
