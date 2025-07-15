@@ -16,7 +16,7 @@ const items = ref<{ wiki: { id: string, title: string, tags: string[], updatedAt
 const fetchItems = async (listId: string) => {
     isPendingFetchItems.value = true;
     const favoriteItem = await $fetch(`/api/favorites/lists/${listId}`);
-    const response = await Promise.all(favoriteItem.data.map(async (item: FavoritesItem) => {
+    const response = await Promise.all(favoriteItem.data.map(async (item: any) => {
         const wiki = await fetchWiki(item.wikiId);
         return { wiki: wiki, list: item };
     }));
@@ -40,7 +40,7 @@ const toggleDropdown = () => {
     isDropdownOpen.value = !isDropdownOpen.value;
 };
 
-const formatDate = (timestamp: number) => {
+const formatDate = (timestamp: any) => {
     return new Date(timestamp).toLocaleDateString('ko-KR', {
         year: 'numeric',
         month: 'long',
@@ -102,14 +102,14 @@ onMounted(() => {
                         <button
                             v-for="list in favoritesList.data"
                             :key="list.id"
-                            @click="handleSelectList(list)"
+                            @click="handleSelectList(list as any)"
                             class="w-full p-4 text-left hover:bg-[var(--ui-bg-elevated)] transition-colors duration-200 first:rounded-t-lg last:rounded-b-lg"
                             :class="{ 'bg-[var(--ui-bg-elevated)]': selectedList?.id === list.id }"
                         >
                             <div class="flex flex-col gap-1">
                                 <span class="font-medium text-[var(--ui-text)]">{{ list.name }}</span>
                                 <span class="text-sm text-[var(--ui-text-muted)]">
-                                    {{ formatDate(list.createdAt) }}
+                                    {{ formatDate(list.createdAt as any) }}
                                 </span>
                             </div>
                         </button>
