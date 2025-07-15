@@ -59,7 +59,7 @@ const loggedInMenuList = [
         name: '설정',
         icon: 'material-symbols:settings-outline',
         onClick: () => {
-            navigateTo('/settings');
+            navigateTo(`/profile/${user.value?.id}/setting`);
         },
         description: '계정 및 앱 설정'
     },

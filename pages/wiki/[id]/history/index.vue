@@ -5,17 +5,14 @@ import { Icon } from '@iconify/vue';
 import ContentHeader from '~/components/common/ContentHeader.vue';
 import ContentBody from '~/components/common/ContentBody.vue';
 import NavigationTitle from '~/components/common/NavigationTitle.vue';
+import type { WikiHistory } from '~/server/db/schema';
 
 const route = useRoute()
 const id = route.params.id
-const { data: response, error } = await useFetch(`/api/wiki/${id}/history`)
-
-if (error.value) {
-    throw createError({
-        statusCode: error.value.statusCode,
-        statusMessage: error.value.statusMessage,
-    })
-}
+const { data: response, hasMore, loadMore, refresh, pending } = await usePagination<WikiHistory>({
+    url: `/api/wiki/${id}/history`,
+    limit: 10,
+})
 
 // revert 관련 공통 기능 사용
 const { 
@@ -44,73 +41,81 @@ const navigateToWiki = () => {
 </script>
 
 <template>
-        <!-- 상단 헤더 -->
-        <ContentHeader>
-            <!-- 왼쪽: 브레드크럼 -->
+    <!-- 상단 헤더 -->
+    <ContentHeader>
+        <!-- 왼쪽: 브레드크럼 -->
 
-            <NavigationTitle title="변경 기록" backButton :navigatePath="`/wiki/${id}`" />
+        <NavigationTitle title="변경 기록" backButton :navigatePath="`/wiki/${id}`" />
 
-            <!-- 오른쪽: 통계 정보 -->
-            <div class="flex items-center gap-4 text-sm text-[var(--ui-text-muted)]">
-                <div class="flex items-center gap-2">
-                    <Icon icon="material-symbols:history" width="16" height="16" />
-                    <span>총 {{ response?.data?.length || 0 }}개 버전</span>
-                </div>
+        <!-- 오른쪽: 통계 정보 -->
+        <div class="flex items-center gap-4 text-sm text-[var(--ui-text-muted)]">
+            <div class="flex items-center gap-2">
+                <Icon icon="material-symbols:history" width="16" height="16" />
+                <span>총 {{ response?.length || 0 }}개 버전</span>
             </div>
-        </ContentHeader>
+        </div>
+    </ContentHeader>
 
-        <!-- 메인 컨텐츠 -->
-        <ContentBody>
-            <!-- 히스토리 목록 카드 -->
-            <div class="bg-[var(--ui-bg)] border border-[var(--ui-border)] rounded-xl shadow-sm overflow-hidden">
-                <!-- 히스토리 목록 -->
-                <div v-if="response?.data && response.data.length > 0" class="divide-y divide-[var(--ui-border)]">
-                    <HistoryCard v-for="(history, index) in response.data" :key="history.id" :history="history"
-                        :wiki-id="id" @view-version="navigateToVersion" @view-diff="navigateToVersionDiff"
-                        @revert="showRevertModal" />
-                </div>
+    <!-- 메인 컨텐츠 -->
+    <ContentBody>
+        <!-- 히스토리 목록 카드 -->
+        <div class="bg-[var(--ui-bg)] border border-[var(--ui-border)] rounded-xl shadow-sm overflow-hidden">
+            <!-- 히스토리 목록 -->
+            <div v-if="response && response.length > 0" class="divide-y divide-[var(--ui-border)]">
+                <HistoryCard v-for="(history, index) in response" :key="history.id" :history="history"
+                    :wiki-id="id" @view-version="navigateToVersion" @view-diff="navigateToVersionDiff"
+                    @revert="showRevertModal" />
+            </div>
 
-                <!-- 로딩 상태 -->
-                <div v-else-if="!response?.data" class="p-6">
-                    <div class="space-y-4">
-                        <div v-for="i in 5" :key="i" class="flex items-start gap-4 animate-pulse">
-                            <div class="w-10 h-10 bg-[var(--ui-bg-muted)] rounded-lg"></div>
-                            <div class="flex-1 space-y-2">
-                                <div class="h-5 bg-[var(--ui-bg-muted)] rounded w-3/4"></div>
-                                <div class="h-4 bg-[var(--ui-bg-muted)] rounded w-1/2"></div>
-                                <div class="flex gap-4">
-                                    <div class="h-3 bg-[var(--ui-bg-muted)] rounded w-20"></div>
-                                    <div class="h-3 bg-[var(--ui-bg-muted)] rounded w-16"></div>
-                                    <div class="h-3 bg-[var(--ui-bg-muted)] rounded w-24"></div>
-                                </div>
+            <!-- 로딩 상태 -->
+            <div v-else-if="!response" class="p-6">
+                <div class="space-y-4">
+                    <div v-for="i in 5" :key="i" class="flex items-start gap-4 animate-pulse">
+                        <div class="w-10 h-10 bg-[var(--ui-bg-muted)] rounded-lg"></div>
+                        <div class="flex-1 space-y-2">
+                            <div class="h-5 bg-[var(--ui-bg-muted)] rounded w-3/4"></div>
+                            <div class="h-4 bg-[var(--ui-bg-muted)] rounded w-1/2"></div>
+                            <div class="flex gap-4">
+                                <div class="h-3 bg-[var(--ui-bg-muted)] rounded w-20"></div>
+                                <div class="h-3 bg-[var(--ui-bg-muted)] rounded w-16"></div>
+                                <div class="h-3 bg-[var(--ui-bg-muted)] rounded w-24"></div>
                             </div>
-                            <div class="flex gap-1">
-                                <div class="w-8 h-8 bg-[var(--ui-bg-muted)] rounded-lg"></div>
-                                <div class="w-8 h-8 bg-[var(--ui-bg-muted)] rounded-lg"></div>
-                                <div class="w-8 h-8 bg-[var(--ui-bg-muted)] rounded-lg"></div>
-                            </div>
+                        </div>
+                        <div class="flex gap-1">
+                            <div class="w-8 h-8 bg-[var(--ui-bg-muted)] rounded-lg"></div>
+                            <div class="w-8 h-8 bg-[var(--ui-bg-muted)] rounded-lg"></div>
+                            <div class="w-8 h-8 bg-[var(--ui-bg-muted)] rounded-lg"></div>
                         </div>
                     </div>
                 </div>
-
-                <!-- 빈 상태 -->
-                <div v-else class="p-12 text-center">
-                    <div
-                        class="w-16 h-16 bg-[var(--ui-bg-muted)] rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Icon icon="material-symbols:history" class="text-[var(--ui-text-muted)]" width="32"
-                            height="32" />
-                    </div>
-                    <h3 class="text-lg font-semibold text-[var(--ui-text)] mb-2">변경 기록이 없습니다</h3>
-                    <p class="text-sm text-[var(--ui-text-muted)] max-w-md mx-auto">
-                        아직 이 문서에 대한 변경 기록이 없습니다. 문서를 편집하면 변경 기록이 생성됩니다.
-                    </p>
-                </div>
             </div>
-        </ContentBody>
 
-        <!-- 되돌리기 확인 모달 -->
-        <RevertModal :is-visible="isRevertModalVisible" :version-info="selectedVersionForRevert"
-            @close="closeRevertModal" @confirm="confirmRevert" />
+            <!-- 빈 상태 -->
+            <div v-else class="p-12 text-center">
+                <div
+                    class="w-16 h-16 bg-[var(--ui-bg-muted)] rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Icon icon="material-symbols:history" class="text-[var(--ui-text-muted)]" width="32" height="32" />
+                </div>
+                <h3 class="text-lg font-semibold text-[var(--ui-text)] mb-2">변경 기록이 없습니다</h3>
+                <p class="text-sm text-[var(--ui-text-muted)] max-w-md mx-auto">
+                    아직 이 문서에 대한 변경 기록이 없습니다. 문서를 편집하면 변경 기록이 생성됩니다.
+                </p>
+            </div>
+        </div>
+
+        <div v-if="hasMore" class="mt-8 flex justify-center">
+            <button @click="loadMore" :disabled="pending"
+                class="px-6 py-3 border border-[var(--ui-border)] rounded-lg bg-[var(--ui-bg)] text-[var(--ui-text)] hover:bg-[var(--ui-bg-accented)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                <Icon v-if="pending" icon="tabler:loader-2" class="w-4 h-4 inline mr-2 animate-spin" />
+                <Icon v-else icon="tabler:chevron-down" class="w-4 h-4 inline mr-2" />
+                {{ pending ? '로딩 중...' : '더 보기' }}
+            </button>
+        </div>
+    </ContentBody>
+
+    <!-- 되돌리기 확인 모달 -->
+    <RevertModal :is-visible="isRevertModalVisible" :version-info="selectedVersionForRevert" @close="closeRevertModal"
+        @confirm="confirmRevert" />
 </template>
 
 <style scoped>

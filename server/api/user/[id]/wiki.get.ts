@@ -5,22 +5,23 @@ import { DbResult } from "~/server/type";
 export default defineEventHandler(
   async (
     event
-  ): Promise<
-    DbResult<{
-      wikis: Wiki[];
-      pagination: {
-        limit: number;
-        hasMore: boolean;
-        lastEvaluatedKey: string | undefined;
-      };
-    }>
-  > => {
+  ) => {
     const { id } = getRouterParams(event);
     const { exclusiveStartKey, limit, sort } = getQuery(event) as {
       exclusiveStartKey?: string;
-      limit?: number;
+      limit?: string;
       sort?: "asc" | "desc";
     };
+
+    const options: {
+      exclusiveStartKey?: string;
+      limit: number;
+      sort: "asc" | "desc";
+    } = {
+      exclusiveStartKey,
+      limit: parseInt(limit || "10") || 10,
+      sort: sort || "desc",
+    }
 
     const { user } = await requireUserSessionForTest(event);
     if (user.id !== id) {
@@ -30,11 +31,7 @@ export default defineEventHandler(
       });
     }
 
-    const wikis = await getWikiListByAuthorId(id, {
-      exclusiveStartKey,
-      limit: limit || 10,
-      sort: sort || "desc",
-    });
+    const wikis = await getWikiListByAuthorId(id, options);
 
     if (!wikis.success) {
       throw createError({
@@ -45,13 +42,11 @@ export default defineEventHandler(
 
     return {
       success: true,
-      data: {
-        wikis: wikis.data.wikis,
-        pagination: {
-          limit: limit || 10,
-          hasMore: wikis.data.hasMore,
-          lastEvaluatedKey: wikis.data.lastEvaluatedKey,
-        },
+      data: wikis.data.wikis,
+      pagination: {
+        limit: options.limit,
+        hasMore: wikis.data.hasMore,
+        lastEvaluatedKey: wikis.data.lastEvaluatedKey,
       },
     };
   },

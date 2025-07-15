@@ -99,3 +99,36 @@
 .action-button:disabled {
     @apply opacity-50 cursor-not-allowed;
 }
+
+.md-editor {
+    --md-color: var(--ui-text);
+    --md-hover-color: var(--ui-text-highlighted);
+    --md-bk-color: var(--ui-bg);
+    --md-bk-color-outstand: var(--ui-bg-muted);
+    --md-bk-hover-color: var(--ui-bg-elevated);
+    --md-border-color: var(--ui-border);
+    --md-border-hover-color: var(--ui-border-accented);
+    --md-border-active-color: var(--ui-text-toned);
+    --md-modal-mask: #00000073;
+    --md-scrollbar-bg-color: var(--ui-bg);
+    --md-scrollbar-thumb-color: var(--ui-border);
+    --md-scrollbar-thumb-hover-color: var(--ui-border-accented);
+    --md-scrollbar-thumb-active-color: var(--ui-border-accented);
+}
+
+:not(.dark) .md-editor blockquote {
+    background-color: var(--ui-bg-elevated);
+    border-left: 4px solid var(--ui-primary);
+    color: var(--ui-text-toned);
+    padding: 0.75em 0.75em;
+    margin: 0.5em 0;
+}
+
+.dark .md-editor blockquote {
+    background-color: var(--ui-bg-elevated);
+    border-left: 4px solid var(--ui-primary);
+    color: var(--ui-text-toned);
+    padding: 0.75em 0.75em;
+    margin: 0.5em 0;
+}
+

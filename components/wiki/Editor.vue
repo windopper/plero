@@ -19,6 +19,7 @@ const emit = defineEmits<{
 
 const newTag = ref('')
 
+
 // AI 편집 관련 상태
 const showAITooltip = ref(false)
 const tooltipPosition = ref({ x: 0, y: 0 })
@@ -223,7 +224,9 @@ onUnmounted(() => {
             ref="mdEditorRef"
             :model-value="contentValue" 
             @update:model-value="updateContentValue"
-            language="ko" />
+            language="ko"
+            style="--md-theme-quote-bg-color: var(--ui-bg-muted); --md-theme-quote-border: var(--ui-border-accented);"
+        />
 
         <!-- AI 편집 툴팁 -->
         <AIEditTooltip 
@@ -252,4 +255,21 @@ onUnmounted(() => {
     --md-scrollbar-thumb-hover-color: var(--ui-border-accented);
     --md-scrollbar-thumb-active-color: var(--ui-border-accented);
 }
+
+:not(.dark) .md-editor blockquote {
+    background-color: var(--ui-bg-elevated);
+    border-left: 4px solid var(--ui-primary);
+    color: var(--ui-text-toned);
+    padding: 0.75em 0.75em;
+    margin: 0.5em 0;
+}
+
+.dark .md-editor blockquote {
+    background-color: var(--ui-bg-elevated);
+    border-left: 4px solid var(--ui-primary);
+    color: var(--ui-text-toned);
+    padding: 0.75em 0.75em;
+    margin: 0.5em 0;
+}
+
 </style>

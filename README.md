@@ -16,8 +16,8 @@
 - ✅ **반응형 디자인** - 모바일, 태블릿, 데스크톱 최적화
 - ✅ **즐겨찾기 시스템** - 개발 중
 - ✅ **태그 기반 분류** - 개발 중
+- ✅ **자동 위키 생성**
 - 🔄 **통합 검색** - 개발 중
-- 🔄 **자동 위키 생성**
 - 🔄 **멀티 에이전트 위키 생성**
 
 ## 🏗️ 기술 스택
@@ -26,7 +26,8 @@
 [![Vue.js](https://img.shields.io/badge/Vue.js-4FC08D?style=for-the-badge&logo=vuedotjs&logoColor=white)](https://vuejs.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
 [![Iconify](https://img.shields.io/badge/Iconify-026C9C?style=for-the-badge&logo=Iconify&logoColor=white)](https://iconify.design/)
-[![DynamoDB](https://img.shields.io/badge/DynamoDB-4053D6?style=for-the-badge&logo=amazon-dynamodb&logoColor=white)](https://aws.amazon.com/dynamodb/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Drizzle](https://img.shields.io/badge/Drizzle-C5F74F?style=for-the-badge&logo=drizzle&logoColor=black)](https://orm.drizzle.team/)
 [![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
 [![md-editor-v3](https://img.shields.io/badge/md--editor--v3-000000?style=for-the-badge&logo=md-editor-v3&logoColor=white)](https://md-editor-v3.vercel.app/)
 
@@ -64,7 +65,7 @@ plero/
 - [x] **통합 검색 기능 구현** - 제목, 내용, 태그, 작성자명 등 전체 텍스트 검색
 - [x] **페이지네이션 시스템 구현** - API 및 UI 모두 완성
 - [x] **즐겨찾기 백엔드 API 구현** - UI는 완성, 실제 저장 기능 필요
-- [ ] **자동 위키 생성** - 위키 생성 시 자동으로 위키 생성
+- [x] **자동 위키 생성** - 위키 생성 시 자동으로 위키 생성
 - [ ] **멀티 에이전트 위키 생성** - 위키 생성 시 자동으로 위키 생성
 
 ### ⚡ **우선순위 중간**
@@ -130,8 +131,22 @@ NUXT_SESSION_PASSWORD=your_password
 NUXT_OAUTH_GOOGLE_CLIENT_ID=your_google_client_id
 NUXT_OAUTH_GOOGLE_CLIENT_SECRET=your_google_client_secret
 
+# GEMINI
+NUXT_GEMINI_API_KEY=your_gemini_api_key
+
+# Neon DB
+NUXT_NEON_ENDPOINT=your_neon_endpoint
+
+
+# 데이터베이스 마이그레이션 실행
+npm run db:generate  # 스키마 변경 후 마이그레이션 생성
+npm run db:migrate   # 데이터베이스에 적용
+
 # 개발 서버 실행
 npm run dev
+
+# 데이터베이스 관리 (선택사항)
+npm run db:studio    # Drizzle Studio로 데이터베이스 GUI 관리
 
 # 테스트 실행
 npm run test
@@ -162,7 +177,3 @@ npm run test
 ## 📄 라이선스
 
 이 프로젝트는 MIT 라이선스 하에 배포됩니다.
-
----
-
-**Plero**로 나만의 지식 공간을 만들어보세요! 🚀

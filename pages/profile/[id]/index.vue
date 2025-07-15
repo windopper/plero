@@ -97,7 +97,7 @@ const saveProfile = async () => {
 };
 
 // 날짜 포맷팅
-const formatDate = (timestamp: number) => {
+const formatDate = (timestamp: Date) => {
     return new Date(timestamp).toLocaleDateString('ko-KR', {
         year: 'numeric',
         month: 'long',
@@ -448,7 +448,7 @@ const navigateToHistory = () => {
                                 <div>
                                     <div class="text-sm font-medium text-[var(--ui-text)]">마지막 로그인</div>
                                     <div class="text-sm text-[var(--ui-text-muted)]">
-                                        {{ user.lastLoginAt ? getRelativeTime(user.lastLoginAt) : '정보 없음' }}
+                                        {{ user.lastLoginAt ? formatDate(user.lastLoginAt) : '정보 없음' }}
                                     </div>
                                 </div>
                             </div>

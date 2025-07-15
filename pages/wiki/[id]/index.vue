@@ -92,8 +92,8 @@ const handlePublishUpdate = (newIsPublished) => {
                 <Icon icon="material-symbols:edit" width="16" height="16" />
                 <span class="text-sm font-medium">편집</span>
             </button>
-            <WikiPublishButton v-if="isAuthor" :is-published="isPublished" :wiki-id="id"
-                :wiki-title="wiki?.title || ''" @update:is-published="handlePublishUpdate" />
+            <WikiPublishButton v-if="isAuthor" :is-published="isPublished" :wiki-id="id" :wiki-title="wiki?.title || ''"
+                @update:is-published="handlePublishUpdate" />
         </div>
     </ContentHeader>
 
@@ -121,7 +121,7 @@ const handlePublishUpdate = (newIsPublished) => {
                         </div>
 
                         <!-- 마크다운 컨텐츠 -->
-                        <MdPreview :modelValue="content"
+                        <MdPreview :modelValue="content" language="en"
                             class="break-words max-w-none prose md:prose-base prose-sm prose-zinc dark:prose-invert" />
                     </div>
                 </div>
@@ -171,8 +171,7 @@ const handlePublishUpdate = (newIsPublished) => {
                     </div>
 
                     <!-- 기여자 카드 -->
-                    <div
-                        class="bg-[var(--ui-bg)] border border-[var(--ui-border)] rounded-xl shadow-sm p-6">
+                    <div class="bg-[var(--ui-bg)] border border-[var(--ui-border)] rounded-xl shadow-sm p-6">
                         <Contributors v-if="contributors && contributors.length > 0" :contributors="contributors" />
                         <Contributors v-else :contributors="[]" :is-loading="true" />
                     </div>

@@ -5,6 +5,22 @@ import { checkAccessWiki } from "~/server/utils/wiki";
 
 export default defineEventHandler(async (event) => {
     const { id } = getRouterParams(event) as { id: string }
+    const { exclusiveStartKey, limit, sort } = getQuery(event) as {
+        exclusiveStartKey?: string;
+        limit?: string;
+        sort?: "asc" | "desc";
+    };
+
+    const options: {
+        exclusiveStartKey?: string;
+        limit: number;
+        sort: "asc" | "desc";
+    } = {
+        exclusiveStartKey,
+        limit: parseInt(limit || "10") || 10,
+        sort: sort || "desc"
+    }
+
     if (!id) {
         throw createError({
             statusCode: 400,
@@ -13,7 +29,7 @@ export default defineEventHandler(async (event) => {
     }
 
     const [histories, wiki, user] = await Promise.all([
-        getWikiHistoriesByWikiId(id),
+        getWikiHistoriesByWikiId(id, options),
         getWiki(id),
         getUserSession(event)
     ])
@@ -21,14 +37,14 @@ export default defineEventHandler(async (event) => {
     if (!histories.success) {
         throw createError({
             statusCode: 500,
-            statusMessage: "Internal server error"
+            statusMessage: histories.error?.message ?? "Internal server error"
         })
     }
 
     if (!wiki.success) {
         throw createError({
             statusCode: 500,
-            statusMessage: "Internal server error"
+            statusMessage: wiki.error?.message ?? "Internal server error"
         })
     }
 
@@ -36,6 +52,11 @@ export default defineEventHandler(async (event) => {
 
     return {
         success: true,
-        data: histories.data
+        data: histories.data.histories,
+        pagination: {
+            limit: options.limit,
+            hasMore: histories.data.hasMore,
+            lastEvaluatedKey: histories.data.lastEvaluatedKey
+        }
     }
 })

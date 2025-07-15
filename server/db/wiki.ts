@@ -1,36 +1,19 @@
-import { 
-    GetItemCommand, 
-    PutItemCommand, 
-    DeleteItemCommand, 
-    ScanCommand, 
-    QueryCommand,
-    UpdateItemCommand,
-    BatchGetItemCommand
-} from "@aws-sdk/client-dynamodb";
-import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
-import client from ".";
-import { WIKI_COLLECTION } from "./constants";
-import { Wiki, WIKI_SCHEMA } from "./schema";
-import { v4 } from "uuid";
-import type { DbResult } from "../type";
+import { eq, and, ilike, desc, asc, sql, count, inArray } from 'drizzle-orm';
+import { db } from '.';
+import { WIKI_SCHEMA } from './schema';
+import type { Wiki } from './schema';
+import type { DbResult } from '../type';
 
 export async function getWiki(id: string): Promise<DbResult<Wiki>> {
     try {
-        const command = new GetItemCommand({
-            TableName: WIKI_COLLECTION,
-            Key: marshall({ id }),
-        });
+        const result = await db
+            .select()
+            .from(WIKI_SCHEMA)
+            .where(eq(WIKI_SCHEMA.id, id))
+            .limit(1);
 
-        const response = await client.send(command);
-        
-        if (response.Item) {
-            const data = unmarshall(response.Item);
-            const result = WIKI_SCHEMA.safeParse(data);
-            if (result.success) {
-                return { success: true, data: result.data };
-            } else {
-                return { success: false, error: { message: result.error.message } };
-            }
+        if (result.length > 0) {
+            return { success: true, data: result[0] };
         } else {
             return {
                 success: false,
@@ -47,25 +30,16 @@ export async function getWiki(id: string): Promise<DbResult<Wiki>> {
 
 export async function getWikisByIds(ids: string[]): Promise<DbResult<Wiki[]>> {
     try {
-        const command = new BatchGetItemCommand({
-            RequestItems: {
-                [WIKI_COLLECTION]: {
-                    Keys: ids.map(id => marshall({ id })),
-                },
-            },
-        });
-
-        const response = await client.send(command);
-
-        if (!response.Responses) {
-            return { success: false, error: { message: "Failed to get wikis" } };
+        if (ids.length === 0) {
+            return { success: true, data: [] };
         }
 
-        return { success: true, data: response.Responses[WIKI_COLLECTION].map(item => {
-            const data = unmarshall(item);
-            const result = WIKI_SCHEMA.safeParse(data);
-            return result.success ? result.data : null;
-        }).filter(wiki => wiki !== null) as Wiki[] };
+        const result = await db
+            .select()
+            .from(WIKI_SCHEMA)
+            .where(inArray(WIKI_SCHEMA.id, ids));
+
+        return { success: true, data: result };
     } catch (error) {
         return { success: false, error: { message: `Failed to get wikis: ${error}` } };
     }
@@ -85,73 +59,37 @@ export async function getWikiList(options: {
   try {
     const { query: searchQuery, exclusiveStartKey, limit: pageLimit } = options;
     const actualLimit = pageLimit || 10;
+    
+    let offset = 0;
+    if (exclusiveStartKey) {
+      try {
+        offset = parseInt(exclusiveStartKey);
+      } catch {
+        offset = 0;
+      }
+    }
 
-    let command;
-
-    const baseParams = {
-      TableName: WIKI_COLLECTION,
-      Limit: actualLimit,
-      ...(exclusiveStartKey && {
-        ExclusiveStartKey: JSON.parse(exclusiveStartKey),
-      }),
-    };
-
+    const whereConditions = [eq(WIKI_SCHEMA.isPublished, true)];
     if (searchQuery) {
-      // 검색어가 있을 때는 FilterExpression을 사용하여 title에서 부분 일치 검색
-      command = new ScanCommand({
-        ...baseParams,
-        FilterExpression:
-          "contains(#title, :searchQuery) AND #isPublished = :isPublished",
-        ExpressionAttributeNames: {
-          "#title": "title",
-          "#isPublished": "isPublished",
-        },
-        ExpressionAttributeValues: marshall({
-          ":searchQuery": searchQuery,
-          ":isPublished": true,
-        }),
-      });
-    } else {
-      // 검색어가 없을 때는 모든 위키를 가져옴
-      command = new ScanCommand({
-        ...baseParams,
-        FilterExpression: "#isPublished = :isPublished",
-        ExpressionAttributeNames: {
-          "#isPublished": "isPublished",
-        },
-        ExpressionAttributeValues: marshall({
-          ":isPublished": true,
-        }),
-      });
+      whereConditions.push(ilike(WIKI_SCHEMA.title, `%${searchQuery}%`));
     }
 
-    const response = await client.send(command);
+    const wikis = await db
+      .select()
+      .from(WIKI_SCHEMA)
+      .where(and(...whereConditions))
+      .orderBy(desc(WIKI_SCHEMA.updatedAt))
+      .limit(actualLimit + 1) // +1 to check if there are more
+      .offset(offset);
 
-    if (!response.Items) {
-      return {
-        success: true,
-        data: {
-          wikis: [],
-          hasMore: false,
-        },
-      };
-    }
-
-    const wikis = response.Items.map((item) => {
-      const data = unmarshall(item);
-      const result = WIKI_SCHEMA.safeParse(data);
-      return result.success ? result.data : null;
-    }).filter((wiki) => wiki !== null) as Wiki[];
-
-    const hasMore = !!response.LastEvaluatedKey;
-    const lastEvaluatedKey = response.LastEvaluatedKey
-      ? JSON.stringify(response.LastEvaluatedKey)
-      : undefined;
+    const hasMore = wikis.length > actualLimit;
+    const resultWikis = hasMore ? wikis.slice(0, actualLimit) : wikis;
+    const lastEvaluatedKey = hasMore ? (offset + actualLimit).toString() : undefined;
 
     return {
       success: true,
       data: {
-        wikis,
+        wikis: resultWikis,
         lastEvaluatedKey,
         hasMore,
       },
@@ -182,41 +120,30 @@ export async function getWikiListByAuthorId(
     const { exclusiveStartKey, limit: pageLimit, sort } = options;
     const actualLimit = pageLimit || 10;
 
-    const command = new QueryCommand({
-      TableName: WIKI_COLLECTION,
-      IndexName: "authorId-updatedAt-index",
-      KeyConditionExpression: "authorId = :authorId",
-      ExpressionAttributeValues: marshall({
-        ":authorId": authorId,
-      }),
-      ScanIndexForward: sort === "desc" ? false : true,
-      Limit: actualLimit,
-      ...(exclusiveStartKey && {
-        ExclusiveStartKey: JSON.parse(exclusiveStartKey),
-      }),
-    });
-
-    const response = await client.send(command);
-
-    if (!response.Items) {
-      return {
-        success: true,
-        data: { wikis: [], lastEvaluatedKey: undefined, hasMore: false },
-      };
+    let offset = 0;
+    if (exclusiveStartKey) {
+      try {
+        offset = parseInt(exclusiveStartKey);
+      } catch {
+        offset = 0;
+      }
     }
 
-    const wikis = response.Items.map((item) => {
-      const data = unmarshall(item);
-      const result = WIKI_SCHEMA.safeParse(data);
-      return result.success ? result.data : null;
-    }).filter((wiki) => wiki !== null) as Wiki[];
+    const orderBy = sort === "desc" ? desc(WIKI_SCHEMA.updatedAt) : asc(WIKI_SCHEMA.updatedAt);
 
-    const hasMore = !!response.LastEvaluatedKey;
-    const lastEvaluatedKey = response.LastEvaluatedKey
-      ? JSON.stringify(response.LastEvaluatedKey)
-      : undefined;
+    const wikis = await db
+      .select()
+      .from(WIKI_SCHEMA)
+      .where(eq(WIKI_SCHEMA.authorId, authorId))
+      .orderBy(orderBy)
+      .limit(actualLimit + 1)
+      .offset(offset);
 
-    return { success: true, data: { wikis, lastEvaluatedKey, hasMore } };
+    const hasMore = wikis.length > actualLimit;
+    const resultWikis = hasMore ? wikis.slice(0, actualLimit) : wikis;
+    const lastEvaluatedKey = hasMore ? (offset + actualLimit).toString() : undefined;
+
+    return { success: true, data: { wikis: resultWikis, lastEvaluatedKey, hasMore } };
   } catch (error) {
     return {
       success: false,
@@ -230,34 +157,16 @@ export async function getWikiByTag(tag: string): Promise<DbResult<{wikis: {id: s
         // %20을 공백으로 변환
         const decodedTag = tag.replace(/%20/g, ' ');
         
-        const command = new ScanCommand({
-            TableName: WIKI_COLLECTION,
-            FilterExpression: "contains(tags, :tag)",
-            ExpressionAttributeValues: marshall({
-                ":tag": decodedTag
-            }),
-        });
+        const result = await db
+            .select({
+                id: WIKI_SCHEMA.id,
+                title: WIKI_SCHEMA.title,
+            })
+            .from(WIKI_SCHEMA)
+            .where(sql`${WIKI_SCHEMA.tags} @> ${JSON.stringify([decodedTag])}`);
 
-        const response = await client.send(command);
-        
-        if (!response.Items) {
-            return { success: true, data: { wikis: [], totalCount: 0 } };
-        }
-
-        const wikis = response.Items.map(item => {
-            const data = unmarshall(item);
-            const result = WIKI_SCHEMA.safeParse(data);
-            if (result.success) {
-                return {
-                    id: result.data.id,
-                    title: result.data.title,
-                };
-            }
-            return null;
-        }).filter(wiki => wiki !== null) as {id: string, title: string}[];
-
-        const totalCount = wikis.length;
-        return { success: true, data: { wikis, totalCount } };
+        const totalCount = result.length;
+        return { success: true, data: { wikis: result, totalCount } };
     } catch (error) {
         return {
             success: false,
@@ -268,19 +177,12 @@ export async function getWikiByTag(tag: string): Promise<DbResult<{wikis: {id: s
 
 export async function setWiki(data: Omit<Wiki, 'id'>): Promise<DbResult<Wiki>> {
     try {
-        const wikiId = v4(); // Generate a new UUID for the wiki
-        const wikiData: Wiki = {
-            id: wikiId,
-            ...data,
-        };
+        const result = await db
+            .insert(WIKI_SCHEMA)
+            .values(data)
+            .returning();
 
-        const command = new PutItemCommand({
-            TableName: WIKI_COLLECTION,
-            Item: marshall(wikiData),
-        });
-
-        await client.send(command);
-        return { success: true, data: wikiData };
+        return { success: true, data: result[0] };
     } catch (error) {
         return {
             success: false,
@@ -291,29 +193,22 @@ export async function setWiki(data: Omit<Wiki, 'id'>): Promise<DbResult<Wiki>> {
 
 export async function updateWiki(id: string, data: Partial<Omit<Wiki, 'id'>>): Promise<DbResult<Wiki>> {
     try {
-        // 먼저 기존 데이터 조회
-        const existingWiki = await getWiki(id);
-        if (!existingWiki.success) {
-            return existingWiki;
-        }
+        const updatedData = { ...data, updatedAt: new Date() };
 
-        const updatedData = { ...existingWiki.data, ...data, updatedAt: Date.now() };
+        const result = await db
+            .update(WIKI_SCHEMA)
+            .set(updatedData)
+            .where(eq(WIKI_SCHEMA.id, id))
+            .returning();
 
-        const parseResult = WIKI_SCHEMA.safeParse(updatedData);
-        if (!parseResult.success) {
+        if (result.length > 0) {
+            return { success: true, data: result[0] };
+        } else {
             return {
                 success: false,
-                error: { message: "Invalid wiki data format" },
+                error: { message: "Wiki not found" },
             };
         }
-
-        const command = new PutItemCommand({
-            TableName: WIKI_COLLECTION,
-            Item: marshall(parseResult.data),
-        });
-
-        await client.send(command);
-        return { success: true, data: parseResult.data };
     } catch (error) {
         return {
             success: false,
@@ -324,12 +219,10 @@ export async function updateWiki(id: string, data: Partial<Omit<Wiki, 'id'>>): P
 
 export async function deleteWiki(id: string): Promise<DbResult<void>> {
     try {
-        const command = new DeleteItemCommand({
-            TableName: WIKI_COLLECTION,
-            Key: marshall({ id }),
-        });
+        await db
+            .delete(WIKI_SCHEMA)
+            .where(eq(WIKI_SCHEMA.id, id));
 
-        await client.send(command);
         return { success: true, data: undefined };
     } catch (error) {
         return {
@@ -341,24 +234,21 @@ export async function deleteWiki(id: string): Promise<DbResult<void>> {
 
 export async function checkPublicWikiTitleExists(title: string, excludeId?: string): Promise<DbResult<boolean>> {
     try {
-        const command = new ScanCommand({
-            TableName: WIKI_COLLECTION,
-            FilterExpression: "#title = :title AND #isPublished = :isPublished" + (excludeId ? " AND #id <> :excludeId" : ""),
-            ExpressionAttributeNames: {
-                "#title": "title",
-                "#isPublished": "isPublished",
-                ...(excludeId && { "#id": "id" })
-            },
-            ExpressionAttributeValues: marshall({
-                ":title": title,
-                ":isPublished": true,
-                ...(excludeId && { ":excludeId": excludeId })
-            }),
-        });
+        const whereConditions = [
+            eq(WIKI_SCHEMA.title, title),
+            eq(WIKI_SCHEMA.isPublished, true)
+        ];
 
-        const response = await client.send(command);
-        
-        const exists = !!(response.Items && response.Items.length > 0);
+        if (excludeId) {
+            whereConditions.push(sql`${WIKI_SCHEMA.id} != ${excludeId}`);
+        }
+
+        const result = await db
+            .select({ count: count() })
+            .from(WIKI_SCHEMA)
+            .where(and(...whereConditions));
+
+        const exists = result[0].count > 0;
         return { success: true, data: exists };
     } catch (error) {
         return {

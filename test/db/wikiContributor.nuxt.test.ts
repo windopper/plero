@@ -1,99 +1,101 @@
 // @vitest-environment nuxt
-import { describe, expect, it, afterEach } from "vitest";
+import { afterAll, afterEach, describe, expect, it } from "vitest";
+import { createMockWikiContributor } from "../mock";
+import { 
+  deleteWikiContributor, 
+  getWikiContributor, 
+  setWikiContributor, 
+  updateWikiContributor 
+} from "~/server/db/wikiContributor";
 import { v4 } from "uuid";
-import type { User, Wiki, WikiContributor } from "~/server/db/schema";
-import { deleteWikiContributor, getWikiContributor, setWikiContributor, updateWikiContributor } from "~/server/db/wikiContributor";
-import { getMockUser } from "../mock";
 
-describe("wiki contributor CRUD", () => {
-    let createdDocumentIds: string[] = [];
+describe("Wiki Contributor DB Integration Tests", () => {
+  let createdContributors: string[] = [];
 
-    const createTestWikiContributor = () => {
-        const testWikiId = v4();
-        const testUserId = v4();
+  afterEach(async () => {
+    // 각 테스트 후 cleanup if needed
+  });
 
-        const mockUser: User = getMockUser({
-            id: testUserId,
-        });
+  afterAll(async () => {
+    // 전역 cleanup은 각 테스트의 cleanUpWikiContributor 함수에서 처리
+  });
 
-        const mockWikiContributor: Omit<WikiContributor, 'id'> = {
-            wikiId: testWikiId,
-            contributorId: testUserId,
-            contributorName: mockUser.name,
-            contributorEmail: mockUser.email,
-            contributedAt: Date.now(),
-            firstContributedAt: Date.now(),
-            linesAdded: 0,
-            linesRemoved: 0,
-        }
+  it("위키 기여자 생성 및 조회", async () => {
+    const { contributorData, cleanUpWikiContributor } = await createMockWikiContributor();
+    const testStartTime = Date.now();
 
-        return { testWikiId, testUserId, mockUser, mockWikiContributor };
+    const setResult = await setWikiContributor(contributorData);
+    expect(setResult.success).toBe(true);
+    if (setResult.success) {
+      expect(setResult.data.contributorId).toBe(contributorData.contributorId);
+      expect(setResult.data.contributorEmail).toBe(contributorData.contributorEmail);
+      expect(setResult.data.contributorName).toBe(contributorData.contributorName);
+      expect(setResult.data.contributedAt.getTime()).toBeGreaterThanOrEqual(testStartTime);
+      expect(setResult.data.linesAdded).toBe(0);
+      expect(setResult.data.linesRemoved).toBe(0);
+      
+      const getResult = await getWikiContributor(setResult.data.id);
+      expect(getResult.success).toBe(true);
+      if (getResult.success) {
+        expect(getResult.data.id).toBe(setResult.data.id);
+      }
+
+      await cleanUpWikiContributor(setResult.data.id);
+    } else {
+      await cleanUpWikiContributor();
     }
+  });
 
-    const cleanupWikiContributor = async (documentId: string) => {
-        try {
-            await deleteWikiContributor(documentId);
-        } catch (error) {
-            console.warn('Failed to cleanup wiki contributor:', error);
-        }
+  it("위키 기여자 수정", async () => {
+    const { contributorData, cleanUpWikiContributor } = await createMockWikiContributor();
+
+    const setResult = await setWikiContributor(contributorData);
+    expect(setResult.success).toBe(true);
+    if (setResult.success) {
+      const updateResult = await updateWikiContributor(setResult.data.id, { 
+        linesAdded: 10, 
+        linesRemoved: 5 
+      });
+      expect(updateResult.success).toBe(true);
+      if (updateResult.success) {
+        expect(updateResult.data.linesAdded).toBe(10);
+        expect(updateResult.data.linesRemoved).toBe(5);
+      }
+
+      await cleanUpWikiContributor(setResult.data.id);
+    } else {
+      await cleanUpWikiContributor();
     }
+  });
 
-    afterEach(async () => {
-        // 각 테스트 후에 생성된 모든 문서를 정리
-        for (const documentId of createdDocumentIds) {
-            await cleanupWikiContributor(documentId);
-        }
-        createdDocumentIds = [];
-    });
+  it("위키 기여자 삭제", async () => {
+    const { contributorData, cleanUpWikiContributor } = await createMockWikiContributor();
 
-    it("should create and get wiki contributor", async () => {
-        const { mockWikiContributor } = createTestWikiContributor();
-        const testStartTime = Date.now();
+    const setResult = await setWikiContributor(contributorData);
+    expect(setResult.success).toBe(true);
+    if (setResult.success) {
+      const deleteResult = await deleteWikiContributor(setResult.data.id);
+      expect(deleteResult.success).toBe(true);
+      
+      const getResult = await getWikiContributor(setResult.data.id);
+      expect(getResult.success).toBe(false);
 
-        const setResult = await setWikiContributor(mockWikiContributor);
-        expect(setResult.success).toBe(true);
-        if (setResult.success && setResult.data) {
-            createdDocumentIds.push(setResult.data.id);
-            expect(setResult.data.contributorId).toBe(mockWikiContributor.contributorId);
-            expect(setResult.data.contributorEmail).toBe(mockWikiContributor.contributorEmail);
-            expect(setResult.data.contributorName).toBe(mockWikiContributor.contributorName);
-            expect(setResult.data.contributedAt).toBeGreaterThanOrEqual(testStartTime);
-            expect(setResult.data.linesAdded).toBe(0);
-            expect(setResult.data.linesRemoved).toBe(0);
-        }
-    });
+      await cleanUpWikiContributor(); // 이미 삭제되었지만 호출
+    } else {
+      await cleanUpWikiContributor();
+    }
+  });
 
-    it("should update wiki contributor", async () => {
-        const { mockWikiContributor } = createTestWikiContributor();
+  it("존재하지 않는 기여자 작업 처리", async () => {
+    const nonExistentId = v4();
 
-        const setResult = await setWikiContributor(mockWikiContributor);
-        expect(setResult.success).toBe(true);
-        if (setResult.success && setResult.data) {
-            const documentId = setResult.data.id;
-            createdDocumentIds.push(documentId);
-            
-            const updateResult = await updateWikiContributor(documentId, { linesAdded: 1, linesRemoved: 0 });
-            expect(updateResult.success).toBe(true);
-            if (updateResult.success && updateResult.data) {
-                expect(updateResult.data.linesAdded).toBe(1);
-                expect(updateResult.data.linesRemoved).toBe(0);
-            }
-        }
-    });
+    const getResult = await getWikiContributor(nonExistentId);
+    expect(getResult.success).toBe(false);
 
-    it("should delete wiki contributor", async () => {
-        const { mockWikiContributor } = createTestWikiContributor();
+    const updateResult = await updateWikiContributor(nonExistentId, { linesAdded: 1 });
+    expect(updateResult.success).toBe(false);
 
-        const setResult = await setWikiContributor(mockWikiContributor);
-        expect(setResult.success).toBe(true);
-        if (setResult.success && setResult.data) {
-            const documentId = setResult.data.id;
-            
-            const deleteResult = await deleteWikiContributor(documentId);
-            expect(deleteResult.success).toBe(true);
-            
-            const getResult = await getWikiContributor(documentId);
-            expect(getResult.success).toBe(false);
-        }
-    });
+    const deleteResult = await deleteWikiContributor(nonExistentId);
+    expect(deleteResult.success).toBe(false);
+  });
 });

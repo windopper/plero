@@ -4,21 +4,15 @@ import ContentHeader from '~/components/common/ContentHeader.vue';
 import NavigationTitle from '~/components/common/NavigationTitle.vue';
 import WikiCard from '~/components/wiki/WikiCard.vue';
 import { Icon } from '@iconify/vue';
+import type { Wiki } from '~/server/db/schema';
 
 const route = useRoute();
-const sort = ref<'asc' | 'desc'>('desc');
-const { data, error } = await useFetch(`/api/user/${route.params.id}/wiki`, {
-    query: {
-        sort,
-    },
+
+const { data: allWikis, hasMore, exclusiveStartKey, loadMore, sort } = await usePagination<Wiki>({
+    url: `/api/user/${route.params.id}/wiki`,
+    limit: 10,
 });
 
-if (error.value) {
-    throw createError({
-        statusCode: error.value.statusCode,
-        statusMessage: error.value.statusMessage,
-    })
-}
 </script>
 
 <template>
@@ -44,8 +38,12 @@ if (error.value) {
                     </button>
                 </div>
             </div>
-            <div v-if="data?.success" v-for="wiki in data.data.wikis" :key="wiki.id">
+            <div v-for="wiki in allWikis" :key="wiki.id">
                 <WikiCard :wiki="wiki" />
+            </div>
+            <div v-if="hasMore" class="flex justify-center">
+                <button class="action-button bg-[var(--ui-primary)] hover:bg-[var(--ui-primary-elevated)] font-bold"
+                    @click="loadMore">더 보기</button>
             </div>
         </div>
     </ContentBody>

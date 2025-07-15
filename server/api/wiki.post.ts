@@ -23,7 +23,7 @@ export default defineEventHandler(async (event) => {
     if (!createWikiResult.success) {
         throw createError({
             statusCode: 500,
-            statusMessage: "Failed to create wiki"
+            statusMessage: "Failed to create wiki" + createWikiResult.error.message
         })
     }
 

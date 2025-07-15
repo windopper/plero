@@ -37,8 +37,8 @@ export async function createWikiService(
     lastEditor: data.author.id,
     lastEditorName: data.author.name,
     lastEditorEmail: data.author.email,
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
     isPublished: false,
     tags: data.tags,
     version: 1,
@@ -57,7 +57,7 @@ export async function createWikiService(
 
   const historyData: Omit<WikiHistory, "id"> = {
     wikiId: wikiId,
-    changedAt: Date.now(),
+    changedAt: new Date(),
     changeMessage: "새 위키 생성",
     changeType: "create",
     title: data.title,
@@ -76,6 +76,7 @@ export async function createWikiService(
     isMinor: false,
     addedCharacters: added,
     removedCharacters: removed,
+    metadata: {},
   };
   const setHistoryResult = await setWikiHistory(historyData);
   if (!setHistoryResult.success) {
@@ -89,8 +90,8 @@ export async function createWikiService(
     contributorId: data.author.id,
     contributorName: data.author.name,
     contributorEmail: data.author.email,
-    contributedAt: Date.now(),
-    firstContributedAt: Date.now(),
+    contributedAt: new Date(),
+    firstContributedAt: new Date(),
     linesAdded: added,
     linesRemoved: removed,
   };
@@ -135,7 +136,7 @@ export async function updateWikiService(wikiId: string, data: WikiUpdate): Promi
     const updateWikiResult = await updateWiki(wikiId, {
         title: data.title,
         content: data.content,
-        updatedAt: Date.now(),
+        updatedAt: new Date(),
         version: previousWiki.latestVersion + 1,
         latestVersion: previousWiki.latestVersion + 1,
         lastEditor: data.author.id,
@@ -153,15 +154,15 @@ export async function updateWikiService(wikiId: string, data: WikiUpdate): Promi
 
     const historyData: Omit<WikiHistory, "id"> = {
         wikiId: wikiId,
-        changedAt: Date.now(),
+        changedAt: new Date(),
         changeMessage: data.updateMessage,
         changeType: "edit",
         title: data.title,
         content: data.content,
         version: updatedWiki.version,
-        tags: updatedWiki.tags,   
-        addedTags: updatedWiki.tags.filter((tag) => !getWikiResult.data.tags.includes(tag)),
-        removedTags: getWikiResult.data.tags.filter((tag) => !updatedWiki.tags.includes(tag)),
+        tags: updatedWiki.tags as string[],   
+        addedTags: (updatedWiki.tags as string[]).filter((tag) => !(getWikiResult.data.tags as string[]).includes(tag)),
+        removedTags: (getWikiResult.data.tags as string[]).filter((tag) => !(updatedWiki.tags as string[]).includes(tag)),
         changedBy: data.author.id,
         changedByName: data.author.name,
         changedByEmail: data.author.email,
@@ -172,6 +173,7 @@ export async function updateWikiService(wikiId: string, data: WikiUpdate): Promi
         isMinor: false,
         addedCharacters: added,
         removedCharacters: removed,
+        metadata: {},
     };
     const setHistoryResult = await setWikiHistory(historyData);
     if (!setHistoryResult.success) {
@@ -194,8 +196,8 @@ export async function updateWikiService(wikiId: string, data: WikiUpdate): Promi
             contributorId: data.author.id,
             contributorName: data.author.name,
             contributorEmail: data.author.email,
-            contributedAt: Date.now(),
-            firstContributedAt: Date.now(),
+            contributedAt: new Date(),
+            firstContributedAt: new Date(),
             linesAdded: added,
             linesRemoved: removed,
         });
@@ -206,7 +208,7 @@ export async function updateWikiService(wikiId: string, data: WikiUpdate): Promi
     } else {
         // 4. 위키 참여자 업데이트
         const updateContributorResult = await updateWikiContributor(contributor.id, {
-            contributedAt: Date.now(),
+            contributedAt: new Date(),
             linesAdded: contributor.linesAdded + added,
             linesRemoved: contributor.linesRemoved + removed,
         });
@@ -254,7 +256,7 @@ export async function deleteWikiService(wikiId: string, data: WikiDelete): Promi
         lastEditor: data.author.id,
         lastEditorName: data.author.name,
         lastEditorEmail: data.author.email,
-        updatedAt: Date.now(),
+        updatedAt: new Date(),
         version: previousWiki.data.latestVersion + 1,
         latestVersion: previousWiki.data.latestVersion + 1,
     }
@@ -270,7 +272,7 @@ export async function deleteWikiService(wikiId: string, data: WikiDelete): Promi
 
     const historyData: Omit<WikiHistory, "id"> = {
         wikiId,
-        changedAt: Date.now(),
+        changedAt: new Date(),
         changedBy: data.author.id,
         changedByName: data.author.name,
         changedByEmail: data.author.email,
@@ -310,8 +312,8 @@ export async function deleteWikiService(wikiId: string, data: WikiDelete): Promi
             contributorId: data.author.id,
             contributorName: data.author.name,
             contributorEmail: data.author.email,
-            contributedAt: Date.now(),
-            firstContributedAt: Date.now(),
+            contributedAt: new Date(),
+            firstContributedAt: new Date(),
             linesAdded: added,
             linesRemoved: removed,
         });
@@ -322,7 +324,7 @@ export async function deleteWikiService(wikiId: string, data: WikiDelete): Promi
     } else {
         // 4. 위키 참여자 업데이트
         const updateContributorResult = await updateWikiContributor(contributor.id, {
-            contributedAt: Date.now(),
+            contributedAt: new Date(),
             linesAdded: contributor.linesAdded + added,
             linesRemoved: contributor.linesRemoved + removed,
         });
@@ -374,7 +376,7 @@ export async function revertWikiService(data: WikiRevert): Promise<DbResult<{
     const updateWikiResult = await updateWiki(history.data.wikiId, {
         title: history.data.title,
         content: history.data.content,
-        updatedAt: Date.now(),
+        updatedAt: new Date(),
         version: history.data.version,
         lastEditor: user.id,
         lastEditorName: user.name,
@@ -388,15 +390,15 @@ export async function revertWikiService(data: WikiRevert): Promise<DbResult<{
 
     const createHistoryResult = await setWikiHistory({
         wikiId: history.data.wikiId,
-        changedAt: Date.now(),
+        changedAt: new Date(),
         changeMessage: `v${history.data.version}으로 되돌리기`,
         changeType: "revert",
         title: history.data.title,
         content: history.data.content,
         version: history.data.version,
-        tags: history.data.tags,
-        addedTags: history.data.tags.filter((tag) => !currentWiki.data.tags.includes(tag)),
-        removedTags: currentWiki.data.tags.filter((tag) => !history.data.tags.includes(tag)),
+        tags: history.data.tags as string[],
+        addedTags: (history.data.tags as string[]).filter((tag) => !(currentWiki.data.tags as string[]).includes(tag)),
+        removedTags: (currentWiki.data.tags as string[]).filter((tag) => !(history.data.tags as string[]).includes(tag)),
         changedBy: user.id,
         changedByName: user.name,
         changedByEmail: user.email,
@@ -407,6 +409,7 @@ export async function revertWikiService(data: WikiRevert): Promise<DbResult<{
         addedCharacters: added,
         removedCharacters: removed,
         isMinor: false,
+        metadata: {},
     });
     if (!createHistoryResult.success) {
         return createHistoryResult;
@@ -424,8 +427,8 @@ export async function revertWikiService(data: WikiRevert): Promise<DbResult<{
             contributorId: user.id,
             contributorName: user.name,
             contributorEmail: user.email,
-            contributedAt: Date.now(),
-            firstContributedAt: Date.now(),
+            contributedAt: new Date(),
+            firstContributedAt: new Date(),
             linesAdded: added,
             linesRemoved: removed,
         });
@@ -435,7 +438,7 @@ export async function revertWikiService(data: WikiRevert): Promise<DbResult<{
         contributor = setContributorResult.data;
     } else {
         const updateContributorResult = await updateWikiContributor(contributor.id, {
-            contributedAt: Date.now(),
+            contributedAt: new Date(),
             linesAdded: contributor.linesAdded + added,
             linesRemoved: contributor.linesRemoved + removed,
         });

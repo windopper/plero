@@ -1,36 +1,20 @@
-import { 
-    GetItemCommand, 
-    PutItemCommand, 
-    DeleteItemCommand, 
-    ScanCommand, 
-    QueryCommand,
-    UpdateItemCommand
-} from "@aws-sdk/client-dynamodb";
-import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
-import client from ".";
-import { USER_COLLECTION } from "./constants";
-import { User, USER_SCHEMA } from "./schema";
-import { v4 as uuidv4 } from 'uuid';
+import { eq, count } from 'drizzle-orm';
+import { db } from '.';
+import { USER_SCHEMA } from './schema';
+import type { User } from './schema';
 import type { DbResult } from '../type';
 
 // 기본 사용자 CRUD
 export async function getUser(id: string): Promise<DbResult<User>> {
     try {
-        const command = new GetItemCommand({
-            TableName: USER_COLLECTION,
-            Key: marshall({ id }),
-        });
+        const result = await db
+            .select()
+            .from(USER_SCHEMA)
+            .where(eq(USER_SCHEMA.id, id))
+            .limit(1);
 
-        const response = await client.send(command);
-        
-        if (response.Item) {
-            const data = unmarshall(response.Item);
-            const result = USER_SCHEMA.safeParse(data);
-            if (result.success) {
-                return { success: true, data: result.data };
-            } else {
-                return { success: false, error: { message: "Invalid user data format" } };
-            }
+        if (result.length > 0) {
+            return { success: true, data: result[0] };
         } else {
             return { success: false, error: { message: "User not found" } };
         }
@@ -39,49 +23,72 @@ export async function getUser(id: string): Promise<DbResult<User>> {
     }
 }
 
-export async function setUser(id: string, data: Omit<User, 'id'>): Promise<DbResult<User>> {
+export async function setUser(data: Omit<User, 'id'>): Promise<DbResult<User>> {
     try {
-        const parseResult = USER_SCHEMA.safeParse({ id, ...data });
         
-        if (!parseResult.success) {
-            return { success: false, error: { message: "Invalid user data" } };
-        }
-        
-        const command = new PutItemCommand({
-            TableName: USER_COLLECTION,
-            Item: marshall(parseResult.data),
-        });
+        const result = await db
+            .insert(USER_SCHEMA)
+            .values(data)
+            .onConflictDoUpdate({
+                target: USER_SCHEMA.id,
+                set: {
+                    name: data.name,
+                    email: data.email,
+                    avatar: data.avatar,
+                    displayName: data.displayName,
+                    bio: data.bio,
+                    role: data.role,
+                    isActive: data.isActive,
+                    lastLoginAt: data.lastLoginAt,
+                    loginCount: data.loginCount,
+                    preferences: data.preferences,
+                    metadata: data.metadata,
+                    updatedAt: new Date(),
+                }
+            })
+            .returning();
 
-        await client.send(command);
-        return { success: true, data: parseResult.data };
+        return { success: true, data: result[0] };
     } catch (error) {
         return { success: false, error: { message: `Failed to set user: ${error}` } };
     }
 }
 
+export async function createOrUpdateUserFromGoogle(data: Omit<User, 'id'>): Promise<DbResult<User>> {
+    const user = await getUserByEmail(data.email);
+    if (user.success) {
+        return updateUser(user.data.id, data);
+    } else {
+        return createUser(data);
+    }
+}
+
+export async function createUser(data: Omit<User, 'id'>): Promise<DbResult<User>> {
+    try {
+        const result = await db
+            .insert(USER_SCHEMA)
+            .values(data)
+            .returning();
+
+        return { success: true, data: result[0] };
+    } catch (error) {
+        return { success: false, error: { message: `Failed to create user: ${error}` } };
+    }
+}
+
 export async function updateUser(id: string, data: Partial<Omit<User, 'id'>>): Promise<DbResult<User>> {
     try {
-        // 현재 사용자 데이터 가져오기
-        const currentUser = await getUser(id);
-        if (!currentUser.success) {
-            return currentUser;
-        }
-        
-        // 병합된 데이터 검증
-        const mergedData = { ...currentUser.data, ...data, updatedAt: Date.now() };
-        const parseResult = USER_SCHEMA.safeParse(mergedData);
-        
-        if (!parseResult.success) {
-            return { success: false, error: { message: "Invalid updated user data" } };
-        }
-        
-        const command = new PutItemCommand({
-            TableName: USER_COLLECTION,
-            Item: marshall(parseResult.data),
-        });
+        const result = await db
+            .update(USER_SCHEMA)
+            .set(data)
+            .where(eq(USER_SCHEMA.id, id))
+            .returning();
 
-        await client.send(command);
-        return { success: true, data: parseResult.data };
+        if (result.length > 0) {
+            return { success: true, data: result[0] };
+        } else {
+            return { success: false, error: { message: "User not found" } };
+        }
     } catch (error) {
         return { success: false, error: { message: `Failed to update user: ${error}` } };
     }
@@ -89,129 +96,156 @@ export async function updateUser(id: string, data: Partial<Omit<User, 'id'>>): P
 
 export async function deleteUser(id: string): Promise<DbResult<void>> {
     try {
-        const command = new DeleteItemCommand({
-            TableName: USER_COLLECTION,
-            Key: marshall({ id }),
-        });
+        await db
+            .delete(USER_SCHEMA)
+            .where(eq(USER_SCHEMA.id, id));
 
-        await client.send(command);
         return { success: true, data: undefined };
     } catch (error) {
         return { success: false, error: { message: `Failed to delete user: ${error}` } };
     }
 }
 
+// 이메일로 사용자 조회
 export async function getUserByEmail(email: string): Promise<DbResult<User>> {
     try {
-        const command = new ScanCommand({
-            TableName: USER_COLLECTION,
-            FilterExpression: "email = :email",
-            ExpressionAttributeValues: marshall({
-                ":email": email
-            }),
-        });
+        const result = await db
+            .select()
+            .from(USER_SCHEMA)
+            .where(eq(USER_SCHEMA.email, email))
+            .limit(1);
 
-        const response = await client.send(command);
-        
-        if (response.Items && response.Items.length > 0) {
-            const data = unmarshall(response.Items[0]);
-            const result = USER_SCHEMA.safeParse(data);
-            if (result.success) {
-                return { success: true, data: result.data };
-            } else {
-                return { success: false, error: { message: "Invalid user data format" } };
-            }
+        if (result.length > 0) {
+            return { success: true, data: result[0] };
         } else {
-            return { success: false, error: { message: "User not found with email" } };
+            return { success: false, error: { message: "User not found" } };
         }
     } catch (error) {
         return { success: false, error: { message: `Failed to get user by email: ${error}` } };
     }
 }
 
-// Google OAuth 로그인 시 사용자 생성 또는 업데이트
-export async function createOrUpdateUserFromGoogle(googleUserData: {
-    email: string;
-    name: string;
-    picture?: string;
-}): Promise<DbResult<User>> {
+// 이메일 중복 확인
+export async function checkEmailExists(email: string, excludeId?: string): Promise<DbResult<boolean>> {
     try {
-        // 먼저 기존 사용자 확인
-        const existingUser = await getUserByEmail(googleUserData.email);
-        
-        const now = Date.now();
-        
-        if (existingUser.success) {
-            // 기존 사용자 - 로그인 정보 업데이트
-            const updateData: Partial<Omit<User, 'id'>> = {
-                lastLoginAt: now,
-                loginCount: existingUser.data.loginCount + 1,
-                updatedAt: now,
-                // Google에서 받은 최신 정보로 업데이트
-                name: googleUserData.name,
-                avatar: googleUserData.picture,
-            };
-            
-            return await updateUser(existingUser.data.id, updateData);
-        } else {
-            // 신규 사용자 생성
-            const newUserId = uuidv4();
-            const newUserData: Omit<User, 'id'> = {
-                provider: "google",
-                email: googleUserData.email,
-                name: googleUserData.name,
-                avatar: googleUserData.picture,
-                role: "editor",
-                isActive: true,
-                createdAt: now,
-                updatedAt: now,
-                lastLoginAt: now,
-                loginCount: 1,
-                preferences: {
-                    theme: "auto",
-                    language: "ko",
-                    notifications: true,
-                    emailNotifications: false,
-                },
-            };
-            
-            return await setUser(newUserId, newUserData);
-        }
+        const result = await db
+            .select()
+            .from(USER_SCHEMA)
+            .where(eq(USER_SCHEMA.email, email))
+            .limit(1);
+
+        const exists = result.length > 0;
+        return { success: true, data: exists };
     } catch (error) {
-        return { success: false, error: { message: `Failed to create or update user from Google: ${error}` } };
+        return { success: false, error: { message: `Failed to check email existence: ${error}` } };
     }
 }
 
-// 사용자 권한 확인
-export async function hasPermission(userId: string, requiredRole: User['role']): Promise<boolean> {
-    const user = await getUser(userId);
-    if (!user.success) return false;
-    
-    const roleHierarchy: Record<User['role'], number> = { viewer: 1, editor: 2, admin: 3 };
-    const userRoleLevel = roleHierarchy[user.data.role];
-    const requiredRoleLevel = roleHierarchy[requiredRole];
-    
-    return userRoleLevel >= requiredRoleLevel;
+// 사용자 로그인 정보 업데이트
+export async function updateUserLogin(id: string): Promise<DbResult<User>> {
+    try {
+        // 현재 사용자 정보 조회
+        const currentUser = await getUser(id);
+        if (!currentUser.success) {
+            return currentUser;
+        }
+
+        const result = await db
+            .update(USER_SCHEMA)
+            .set({
+                lastLoginAt: new Date(),
+                loginCount: currentUser.data.loginCount + 1,
+                updatedAt: new Date(),
+            })
+            .where(eq(USER_SCHEMA.id, id))
+            .returning();
+
+        if (result.length > 0) {
+            return { success: true, data: result[0] };
+        } else {
+            return { success: false, error: { message: "User not found" } };
+        }
+    } catch (error) {
+        return { success: false, error: { message: `Failed to update user login: ${error}` } };
+    }
 }
 
-// 활성 사용자 확인
-export async function isActiveUser(userId: string): Promise<boolean> {
-    const user = await getUser(userId);
-    return user.success && user.data.isActive === true;
+// 사용자 선호도 업데이트
+export async function updateUserPreferences(id: string, preferences: any): Promise<DbResult<User>> {
+    try {
+        const result = await db
+            .update(USER_SCHEMA)
+            .set({
+                preferences,
+                updatedAt: new Date(),
+            })
+            .where(eq(USER_SCHEMA.id, id))
+            .returning();
+
+        if (result.length > 0) {
+            return { success: true, data: result[0] };
+        } else {
+            return { success: false, error: { message: "User not found" } };
+        }
+    } catch (error) {
+        return { success: false, error: { message: `Failed to update user preferences: ${error}` } };
+    }
 }
 
-// 사용자 비활성화 (소프트 삭제)
-export async function deactivateUser(userId: string): Promise<DbResult<User>> {
-    return await updateUser(userId, { 
-        isActive: false, 
-        updatedAt: Date.now() 
-    });
+// 활성 사용자 목록 조회 (관리자용)
+export async function getActiveUsers(): Promise<DbResult<User[]>> {
+    try {
+        const result = await db
+            .select()
+            .from(USER_SCHEMA)
+            .where(eq(USER_SCHEMA.isActive, true));
+
+        return { success: true, data: result };
+    } catch (error) {
+        return { success: false, error: { message: `Failed to get active users: ${error}` } };
+    }
 }
 
-// 사용자 활성화
-export async function activateUser(userId: string): Promise<DbResult<User>> {
-    return await updateUser(userId, { 
-        isActive: true, 
-        updatedAt: Date.now() 
-    });
+// 사용자 계정 비활성화
+export async function deactivateUser(id: string): Promise<DbResult<User>> {
+    try {
+        const result = await db
+            .update(USER_SCHEMA)
+            .set({
+                isActive: false,
+                updatedAt: new Date(),
+            })
+            .where(eq(USER_SCHEMA.id, id))
+            .returning();
+
+        if (result.length > 0) {
+            return { success: true, data: result[0] };
+        } else {
+            return { success: false, error: { message: "User not found" } };
+        }
+    } catch (error) {
+        return { success: false, error: { message: `Failed to deactivate user: ${error}` } };
+    }
+}
+
+// 사용자 계정 활성화
+export async function activateUser(id: string): Promise<DbResult<User>> {
+    try {
+        const result = await db
+            .update(USER_SCHEMA)
+            .set({
+                isActive: true,
+                updatedAt: new Date(),
+            })
+            .where(eq(USER_SCHEMA.id, id))
+            .returning();
+
+        if (result.length > 0) {
+            return { success: true, data: result[0] };
+        } else {
+            return { success: false, error: { message: "User not found" } };
+        }
+    } catch (error) {
+        return { success: false, error: { message: `Failed to activate user: ${error}` } };
+    }
 } 

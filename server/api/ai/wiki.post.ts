@@ -1,7 +1,5 @@
 import { generateWiki, generateWikiStream, UploadedFile } from "~/server/service/ai";
 import { streamManager } from "~/server/utils/streamManager";
-import { FileManager } from "~/server/utils/fileManager";
-import { writeFileSync } from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 
 export default defineEventHandler(async (event) => {

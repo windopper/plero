@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import ContentHeader from '~/components/common/ContentHeader.vue';
 import ContentBody from '~/components/common/ContentBody.vue';
 import NavigationTitle from '~/components/common/NavigationTitle.vue';
@@ -9,79 +9,12 @@ import HistoryCard from '~/components/wiki/HistoryCard.vue';
 
 const route = useRoute();
 
-// 반응형 상태
-const limit = ref(30)
-const isLoading = ref(false)
-const exclusiveStartKey = ref<string | undefined>(undefined)
-const allHistories = ref<WikiHistory[]>([])
+const { data: history, hasMore, loadMore, refresh, pending } = await usePagination<WikiHistory>({
+  url: `/api/user/${route.params.id}/history`,
+  limit: 10,
+});
 
-// API 데이터 가져오기 (초기 로드)
-const { data: historyListResponse, pending, refresh } = await useFetch(`/api/user/${route.params.id}/history`, {
-  query: computed(() => ({
-    exclusiveStartKey: undefined, // 초기 로드는 항상 처음부터
-    limit: limit.value,
-  }))
-})
-
-// 데이터 변경 감지하여 누적
-watch(historyListResponse, (newResponse) => {
-  if (newResponse?.data) {
-    // 새로운 로드인 경우 교체
-    allHistories.value = newResponse.data
-    // 페이지네이션 정보 업데이트
-    if (newResponse.pagination?.lastEvaluatedKey) {
-      exclusiveStartKey.value = newResponse.pagination.lastEvaluatedKey
-    }
-  }
-}, { immediate: true })
-
-// 계산된 속성들
-const history = computed(() => {
-  return allHistories.value
-})
-
-const totalCount = computed(() => {
-  return allHistories.value.length
-})
-
-const pagination = computed(() => {
-  return historyListResponse.value?.pagination || {
-    limit: 30,
-    hasMore: false,
-    lastEvaluatedKey: undefined
-  }
-})
-
-// 더 보기 함수 (별도 $fetch 사용)
-const loadMore = async () => {
-  if (!pagination.value.hasMore || !exclusiveStartKey.value || isLoading.value) return
-  
-  isLoading.value = true
-  try {
-    const response = await $fetch(`/api/user/${route.params.id}/history`, {
-      query: {
-        exclusiveStartKey: exclusiveStartKey.value,
-        limit: limit.value,
-      }
-    })
-    
-    if (response?.data) {
-      // 기존 결과에 추가
-      allHistories.value.push(...response.data)
-      
-      // 페이지네이션 정보 업데이트
-      if (response.pagination?.lastEvaluatedKey) {
-        exclusiveStartKey.value = response.pagination.lastEvaluatedKey
-      } else {
-        exclusiveStartKey.value = undefined
-      }
-    }
-  } catch (error) {
-    console.error('더 보기 로드 실패:', error)
-  } finally {
-    isLoading.value = false
-  }
-}
+const totalCount = computed(() => history.value.length);
 </script>
 
 <template>
@@ -96,7 +29,7 @@ const loadMore = async () => {
         <div>
           <h2 class="text-xl font-semibold text-[var(--ui-text)] mb-1">사용자 히스토리</h2>
           <p class="text-sm text-[var(--ui-text-muted)]">
-            총 {{ totalCount }}개의 히스토리{{ pagination.hasMore ? ' (더 많은 결과가 있습니다)' : '' }}
+            총 {{ totalCount }}개의 히스토리{{ hasMore ? ' (더 많은 결과가 있습니다)' : '' }}
           </p>
         </div>
         <button @click="refresh()"
@@ -132,12 +65,12 @@ const loadMore = async () => {
     </div>
 
     <!-- 더 보기 버튼 -->
-    <div v-if="history.length > 0 && pagination.hasMore" class="mt-8 flex justify-center">
-      <button @click="loadMore" :disabled="isLoading || pending"
+    <div v-if="history.length > 0 && hasMore" class="mt-8 flex justify-center">
+      <button @click="loadMore" :disabled="pending"
         class="px-6 py-3 border border-[var(--ui-border)] rounded-lg bg-[var(--ui-bg)] text-[var(--ui-text)] hover:bg-[var(--ui-bg-accented)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-        <Icon v-if="isLoading" icon="tabler:loader-2" class="w-4 h-4 inline mr-2 animate-spin" />
+        <Icon v-if="pending" icon="tabler:loader-2" class="w-4 h-4 inline mr-2 animate-spin" />
         <Icon v-else icon="tabler:chevron-down" class="w-4 h-4 inline mr-2" />
-        {{ isLoading ? '로딩 중...' : '더 보기' }}
+        {{ pending ? '로딩 중...' : '더 보기' }}
       </button>
     </div>
   </ContentBody>

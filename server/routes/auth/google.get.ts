@@ -16,9 +16,25 @@ export default defineOAuthGoogleEventHandler({
 
             // 데이터베이스에 사용자 생성/업데이트
             const dbUser = await createOrUpdateUserFromGoogle({
+                provider: 'google',
                 email: user.email,
-                name: user.name,
-                picture: user.picture,
+                name: user.name,    
+                avatar: user.picture,
+                displayName: user.name,
+                bio: null,
+                role: 'user',
+                isActive: true,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                lastLoginAt: new Date(),
+                loginCount: 1,
+                preferences: {
+                    theme: 'auto',
+                    language: 'ko',
+                    notifications: true,
+                    emailNotifications: false
+                },
+                metadata: {},
             });
 
             if (!dbUser.success) {

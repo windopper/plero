@@ -3,17 +3,29 @@ import { getWikiList } from "../../db/wiki";
 
 export default defineEventHandler(async (event): Promise<{
     success: boolean;
-    data: {
-        wikis: Wiki[];
+    data: Wiki[];
+    pagination: {
+        limit: number;
         hasMore: boolean;
         lastEvaluatedKey?: string;
     };
 }> => {
     const { query, exclusiveStartKey, limit } = getQuery(event);
-    const result = await getWikiList({
-        query: (query as string) || "", 
-        exclusiveStartKey: exclusiveStartKey as string, 
+
+    const options: {
+        query: string;
+        exclusiveStartKey?: string;
+        limit: number;
+    } = {
+        query: (query as string) || "",
+        exclusiveStartKey: exclusiveStartKey as string,
         limit: Number(limit) || 10
+    }
+
+    const result = await getWikiList({
+        query: options.query, 
+        exclusiveStartKey: options.exclusiveStartKey, 
+        limit: options.limit
     });
     
     if (!result.success) {
@@ -25,6 +37,11 @@ export default defineEventHandler(async (event): Promise<{
     
     return {
         success: true,
-        data: result.data,
+        data: result.data.wikis,
+        pagination: {
+            limit: options.limit,
+            hasMore: result.data.hasMore,
+            lastEvaluatedKey: result.data.lastEvaluatedKey,
+        },
     };
 })

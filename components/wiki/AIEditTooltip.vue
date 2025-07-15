@@ -26,7 +26,7 @@ const showInstructionInput = ref(false)
 const editedText = ref('')
 const currentSessionId = ref('')
 const aiEditTooltipRef = useTemplateRef<HTMLDivElement>('aiEditTooltipRef')
-const isError = ref(true)
+const isError = ref(false)
 const errorTimer = ref<NodeJS.Timeout | null>(null)
 
 // 파일 업로드 관련 상태

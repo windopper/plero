@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import ContentBody from '~/components/common/ContentBody.vue';
 import type { Wiki } from '~/server/db/schema';
 
@@ -11,10 +11,7 @@ definePageMeta({
 
 // 반응형 상태
 const searchQuery = ref('')
-const limit = ref(30)
-const isLoading = ref(false)
-const exclusiveStartKey = ref<string | undefined>(undefined)
-const allWikis = ref<any[]>([])
+const limit = 100
 
 // 디바운싱을 위한 타이머
 let debounceTimer: NodeJS.Timeout | null = null
@@ -28,97 +25,26 @@ watch(searchQuery, (newVal) => {
   
   debounceTimer = setTimeout(() => {
     debouncedSearch.value = newVal
-    exclusiveStartKey.value = undefined // 검색 시 키 리셋
-    allWikis.value = [] // 기존 결과 초기화
   }, 300)
 })
 
-// API 데이터 가져오기 (초기 로드와 검색용)
-const { data: wikiListResponse, pending, refresh } = await useFetch<{
-  success: boolean;
-  data: {
-    wikis: Wiki[];
-    hasMore: boolean;
-    lastEvaluatedKey?: string;
-  };
-}>('/api/wiki/list', {
-  query: computed(() => ({
-    query: debouncedSearch.value,
-    exclusiveStartKey: undefined, // 초기 로드는 항상 처음부터
-    limit: limit.value,
-  })),
-  watch: [debouncedSearch, limit], // exclusiveStartKey 제거
-  server: false,
+// 쿼리 객체 생성
+const queryParams = computed(() => {
+  const params: Record<string, any> = {}
+  if (debouncedSearch.value) {
+    params.query = debouncedSearch.value
+  }
+  return params
 })
 
-// 데이터 변경 감지하여 누적
-watch(wikiListResponse, (newResponse) => {
-  if (newResponse?.data?.wikis) {
-    // 새로운 검색이거나 첫 로드인 경우 교체
-    allWikis.value = newResponse.data.wikis
-    // 페이지네이션 정보 업데이트
-    if (newResponse.data.lastEvaluatedKey) {
-      exclusiveStartKey.value = newResponse.data.lastEvaluatedKey
-    }
-  }
-}, { immediate: true })
-
-// 계산된 속성들
-const wikis = computed(() => {
-  return allWikis.value
+const { data: wikis, hasMore, loadMore, refresh, pending } = await usePagination<Wiki>({
+  url: '/api/wiki/list',
+  limit: limit,
+  query: queryParams,
 })
-
-const pagination = computed(() => {
-  const hasMore = wikiListResponse.value?.data.hasMore
-  const lastEvaluatedKey = wikiListResponse.value?.data.lastEvaluatedKey
-  return {
-    limit: limit.value,
-    hasMore,
-    lastEvaluatedKey
-  }
-})
-
-// 더 보기 함수 (별도 $fetch 사용)
-const loadMore = async () => {
-  if (!pagination.value.hasMore || !exclusiveStartKey.value || isLoading.value) return
-  
-  isLoading.value = true
-  try {
-    const response = await $fetch<{
-      success: boolean;
-      data: {
-        wikis: Wiki[];
-        hasMore: boolean;
-        lastEvaluatedKey?: string;
-      };
-    }>('/api/wiki/list', {
-      query: {
-        query: debouncedSearch.value,
-        exclusiveStartKey: exclusiveStartKey.value,
-        limit: limit.value,
-      }
-    })
-    
-    if (response?.data?.wikis) {
-      // 기존 결과에 추가
-      allWikis.value.push(...response.data.wikis)
-      
-      // 페이지네이션 정보 업데이트
-      if (response.data.lastEvaluatedKey) {
-        exclusiveStartKey.value = response.data.lastEvaluatedKey
-      } else {
-        exclusiveStartKey.value = undefined
-      }
-    }
-  } catch (error) {
-    console.error('더 보기 로드 실패:', error)
-  } finally {
-    isLoading.value = false
-  }
-}
 
 // 날짜 포맷팅
-const formatDate = (timestamp: number) => {
+const formatDate = (timestamp: Date) => {
   return new Date(timestamp).toLocaleDateString('ko-KR', {
     year: 'numeric',
     month: 'long',
@@ -128,7 +54,7 @@ const formatDate = (timestamp: number) => {
 
 // 총 개수 계산 (현재 로드된 위키 수)
 const totalCount = computed(() => {
-  return allWikis.value.length
+  return wikis.value.length
 })
 </script>
 
@@ -159,10 +85,10 @@ const totalCount = computed(() => {
     <!-- 결과 개수 -->
     <div class="mb-4 text-sm text-[var(--ui-text-muted)]">
       <span v-if="debouncedSearch">
-        "{{ debouncedSearch }}"에 대한 검색 결과: {{ totalCount }}개{{ pagination.hasMore ? ' (더 많은 결과가 있습니다)' : '' }}
+        "{{ debouncedSearch }}"에 대한 검색 결과: {{ totalCount }}개{{ hasMore ? ' (더 많은 결과가 있습니다)' : '' }}
       </span>
       <span v-else>
-        총 {{ totalCount }}개의 위키{{ pagination.hasMore ? ' (더 많은 결과가 있습니다)' : '' }}
+        총 {{ totalCount }}개의 위키{{ hasMore ? ' (더 많은 결과가 있습니다)' : '' }}
       </span>
     </div>
 
@@ -229,12 +155,12 @@ const totalCount = computed(() => {
     </div>
 
     <!-- 더 보기 버튼 -->
-    <div v-if="wikis.length > 0 && pagination.hasMore" class="mt-8 flex justify-center">
-      <button @click="loadMore" :disabled="isLoading || pending"
+    <div v-if="wikis.length > 0 && hasMore" class="mt-8 flex justify-center">
+      <button @click="loadMore" :disabled="pending"
         class="px-6 py-3 border border-[var(--ui-border)] rounded-lg bg-[var(--ui-bg)] text-[var(--ui-text)] hover:bg-[var(--ui-bg-accented)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-        <Icon v-if="isLoading" icon="tabler:loader-2" class="w-4 h-4 inline mr-2 animate-spin" />
+        <Icon v-if="pending" icon="tabler:loader-2" class="w-4 h-4 inline mr-2 animate-spin" />
         <Icon v-else icon="tabler:chevron-down" class="w-4 h-4 inline mr-2" />
-        {{ isLoading ? '로딩 중...' : '더 보기' }}
+        {{ pending ? '로딩 중...' : '더 보기' }}
       </button>
     </div>
   </ContentBody>
