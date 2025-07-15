@@ -5,10 +5,6 @@ import ContentBody from '~/components/common/ContentBody.vue';
 import NavigationTitle from '~/components/common/NavigationTitle.vue';
 import type { User } from '~/server/db/schema';
 
-defineRouteRules({
-    isr: 60 * 60,
-})
-
 const route = useRoute();
 const { user: sessionUser } = useUserSession();
 const { data: user, refresh } = await useAsyncData<User>(`user-${route.params.id}`, async () => {

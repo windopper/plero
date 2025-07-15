@@ -6,10 +6,6 @@ import VersionHero from '~/components/hero/VersionHero.vue';
 import WebTemplate from '~/components/hero/WebTemplate.vue';
 import HistoryCard from '~/components/wiki/HistoryCard.vue';
 
-defineRouteRules({
-    prerender: true,
-})
-
 const navigateToWikiCreate = () => {
     navigateTo('/wiki/create')
 }
