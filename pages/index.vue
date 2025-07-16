@@ -2,8 +2,10 @@
 import { MdEditor, MdPreview } from 'md-editor-v3';
 import 'md-editor-v3/lib/style.css';
 import HorizontalDiagonalLine from '~/components/common/HorizontalDiagonalLine.vue';
+import AIWikiHero from '~/components/hero/AIWikiHero.vue';
 import VersionHero from '~/components/hero/VersionHero.vue';
 import WebTemplate from '~/components/hero/WebTemplate.vue';
+import WikiStarHero from '~/components/hero/WikiStarHero.vue';
 import HistoryCard from '~/components/wiki/HistoryCard.vue';
 
 const navigateToWikiCreate = () => {
@@ -125,7 +127,7 @@ onMounted(() => {
 
             <div class="flex flex-col gap-8">
                 <div class="flex flex-row items-center gap-4">
-                    <div class="flex flex-col items-end w-[30%]">
+                    <div class="flex flex-col items-end w-[30%] p-4">
                         <div class="feature-title">
                             마크다운 기반 작성
                         </div>
@@ -141,7 +143,7 @@ onMounted(() => {
                     </div>
                 </div>
                 <div class="flex flex-row-reverse items-center gap-4">
-                    <div class="flex flex-col items-start w-[30%]">
+                    <div class="flex flex-col items-start w-[30%] p-4">
                         <div class="feature-title">
                             실시간 미리보기
                         </div>
@@ -156,32 +158,32 @@ onMounted(() => {
                     </div>
                 </div>
                 <div class="flex flex-row items-center gap-4">
-                    <div class="flex flex-col items-end w-[30%]">
+                    <div class="flex flex-col items-end w-[30%] px-8">
                         <div class="feature-title">
                             버전 관리
                         </div>
                         <div class="feature-description">
-                            모든 편집 기록을 추적하고 언제든 이전 버전으로 되돌리기
+                            모든 편집 기록을 추적하고 언제든 이전 버전으로 되돌릴 수 있어요
                         </div>
                     </div>
-                    <div class="relative w-[70%] p-16">
+                    <div class="relative w-[70%] p-8">
                         <VersionHero />
                     </div>
                 </div>
-                <!-- <div class="flex flex-row-reverse items-center gap-4">
-                    <div class="flex flex-col items-start w-[30%]">
+                <div class="flex flex-row-reverse items-center gap-4">
+                    <div class="flex flex-col items-start w-[30%] p-4">
                         <div class="feature-title">
-                            AI 위키 생성
+                            AI 위키 생성/편집
                         </div>
                         <div class="feature-description">
-                            텍스트나 파일을 업로드하면 AI가 자동으로 위키를 생성해드려요
+                            텍스트나 파일을 업로드하면 AI가 자동으로 위키를 생성해드려요. 또는 직접 지시사항을 입력해서 위키를 편집할 수 있어요.
                         </div>
                     </div>
-                    <div class="relative w-[70%] p-16">
-                        <span>채워야됨.</span>
+                    <div class="relative w-[70%] p-8">
+                        <AIWikiHero />
                     </div>
                 </div>
-                <div class="flex flex-row items-center gap-4">
+                <!-- <div class="flex flex-row items-center gap-4">
                     <div class="flex flex-col items-end w-[30%]">
                         <div class="feature-title">
                             즐겨찾기 시스템
@@ -190,8 +192,8 @@ onMounted(() => {
                             중요한 위키들을 목록별로 정리하고 빠르게 접근하세요
                         </div>
                     </div>
-                    <div class="relative w-[70%] p-16">
-                        <span>채워야됨.</span>
+                    <div class="relative w-[70%] p-8">
+                        <WikiStarHero />
                     </div>
                 </div>
                 <div class="flex flex-row-reverse items-center gap-4">

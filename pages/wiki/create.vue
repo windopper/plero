@@ -4,7 +4,7 @@ import ContentHeader from '~/components/common/ContentHeader.vue'
 import ContentBody from '~/components/common/ContentBody.vue'
 import { Icon } from '@iconify/vue'
 import NavigationTitle from '~/components/common/NavigationTitle.vue';
-import WikiAIGenerateButton from '~/components/wiki/WikiAIGenerateButton.vue';
+import WikiAIGenerateButton from '~/components/wiki/ai/WikiAIGenerateButton.vue';
 
 const text = ref('')
 const title = ref('')

@@ -3,6 +3,12 @@ import { Icon } from '@iconify/vue';
 import type { FavoritesList } from '~/server/db/schema';
 import FavoriteListItem from './FavoriteListItem.vue';
 
+// API에서 받는 직렬화된 타입 정의
+type SerializedFavoritesList = Omit<FavoritesList, 'createdAt' | 'updatedAt'> & {
+    createdAt: string;
+    updatedAt: string;
+};
+
 interface Props {
     wikiId: string;
     initialStarCount?: number;
@@ -40,10 +46,21 @@ const loadUserFavoritesData = async () => {
     
     loading.value = true;
     try {
-        const { data } = await $fetch(`/api/favorites/user/wiki/${props.wikiId}`);
+        const { data } = await $fetch(`/api/favorites/user/wiki/${props.wikiId}`) as {
+            data: {
+                isFavorited: boolean;
+                availableLists: SerializedFavoritesList[];
+                favoritedLists: SerializedFavoritesList[];
+            }
+        };
         isFavorited.value = data.isFavorited;
-        availableLists.value = data.availableLists;
-        favoritedListIds.value = data.favoritedLists.map((list: FavoritesList) => list.id);
+        // 직렬화된 데이터를 FavoritesList 타입으로 변환
+        availableLists.value = data.availableLists.map(list => ({
+            ...list,
+            createdAt: new Date(list.createdAt),
+            updatedAt: new Date(list.updatedAt)
+        }));
+        favoritedListIds.value = data.favoritedLists.map(list => list.id);
         userDataLoaded.value = true;
     } catch (error) {
         console.error('사용자 즐겨찾기 데이터 로드 실패:', error);
@@ -91,8 +108,14 @@ const toggleFavorite = async () => {
                         isDefault: true,
                         sortOrder: 0
                     }
-                });
-                defaultList = data;
+                }) as { data: SerializedFavoritesList };
+                
+                // 직렬화된 데이터를 FavoritesList 타입으로 변환
+                defaultList = {
+                    ...data,
+                    createdAt: new Date(data.createdAt),
+                    updatedAt: new Date(data.updatedAt)
+                };
                 availableLists.value.unshift(defaultList);
             }
             
@@ -174,9 +197,16 @@ const createNewList = async () => {
                 isDefault: false,
                 sortOrder: availableLists.value.length
             }
-        });
+        }) as { data: SerializedFavoritesList };
         
-        availableLists.value.push(data);
+        // 직렬화된 데이터를 FavoritesList 타입으로 변환
+        const newList: FavoritesList = {
+            ...data,
+            createdAt: new Date(data.createdAt),
+            updatedAt: new Date(data.updatedAt)
+        };
+        
+        availableLists.value.push(newList);
         newListName.value = '';
         showCreateForm.value = false;
     } catch (error) {
@@ -220,7 +250,7 @@ const finishEditingList = async (name?: string) => {
             body: {
                 name: finalName.trim()
             }
-        });
+        }) as { data: { name: string } };
         
         // 목록 업데이트
         const index = availableLists.value.findIndex(list => list.id === editingListId.value);

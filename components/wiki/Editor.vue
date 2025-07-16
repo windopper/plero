@@ -3,7 +3,7 @@ import { MdEditor } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
 import { ref, nextTick, onMounted, onUnmounted, useTemplateRef } from 'vue'
 import Tags from './Tags.vue'
-import AIEditTooltip from './AIEditTooltip.vue'
+import AIEditTooltip from '~/components/wiki/ai/AIEditTooltip.vue'
 
 const props = defineProps<{
     contentValue: string

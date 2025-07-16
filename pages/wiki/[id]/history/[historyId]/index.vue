@@ -1,13 +1,12 @@
 <script setup lang="ts">
-import Container from '~/components/wiki/Container.vue';
 import ProfileBadge from '~/components/common/ProfileBadge.vue';
-// @ts-ignore
 import { MdPreview } from 'md-editor-v3';
 import { Icon } from '@iconify/vue';
 import RevertModal from '~/components/wiki/RevertModal.vue';
 import Tags from '~/components/wiki/Tags.vue';
 import ContentHeader from '~/components/common/ContentHeader.vue';
 import ContentBody from '~/components/common/ContentBody.vue';
+import MarkdownPreview from '~/components/wiki/MarkdownPreview.vue';
 
 const route = useRoute()
 const id = route.params.id
@@ -257,7 +256,7 @@ const historyData = computed(() => {
                                 <div class="text-xs font-medium text-[var(--ui-text-muted)] uppercase tracking-wide">
                                     시간</div>
                                 <div class="text-sm font-medium text-[var(--ui-text)]">{{
-                                    getRelativeTime(historyData.changedAt) }}</div>
+                                    getRelativeTime(new Date(historyData.changedAt)) }}</div>
                             </div>
                         </div>
 
@@ -351,7 +350,7 @@ const historyData = computed(() => {
                     <div class="flex items-center gap-3 mb-3">
                         <div
                             class="w-10 h-10 bg-blue-100 dark:bg-blue-900/40 rounded-lg flex items-center justify-center">
-                            <Icon icon="material-symbols:history" class="text-blue-600 dark:text-blue-500" width="20"
+                            <Icon icon="material-symbols:history" class="text-blue-600 dark:text-blue-300" width="20"
                                 height="20" />
                         </div>
                         <div class="flex-1">
@@ -378,8 +377,7 @@ const historyData = computed(() => {
                 </div>
 
                 <!-- 마크다운 컨텐츠 -->
-                <MdPreview :modelValue="historyData.content"
-                    class="break-words max-w-none prose md:prose-base prose-sm prose-zinc dark:prose-invert" />
+                <MarkdownPreview :content="historyData.content" />
             </div>
 
             <!-- 로딩 상태 -->

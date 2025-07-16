@@ -14,7 +14,7 @@ export default defineNuxtConfig({
     "@nuxtjs/color-mode",
     "@nuxtjs/mdc",
     "nuxt-auth-utils",
-    "@nuxt/test-utils/module"
+    "@nuxt/test-utils/module",
   ],
 
   vite: {
@@ -22,6 +22,11 @@ export default defineNuxtConfig({
     optimizeDeps: {
       include: ["debug", "debug/src/browser"],
     },
+    server: {
+      hmr: {
+        overlay: false,
+      }
+    }
   },
   css: ["~/assets/css/main.css"],
   runtimeConfig: {
