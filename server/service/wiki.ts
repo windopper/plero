@@ -1,7 +1,7 @@
 import { deleteWiki, getWiki, setWiki, updateWiki } from "../db/wiki";
 import { User, Wiki, WikiContributor, WikiHistory } from "../db/schema";
-import { deleteWikiHistoriesByWikiId, deleteWikiHistory, getLatestWikiHistory, getWikiHistory, setWikiHistory, updateWikiHistory } from "../db/wikiHistory";
-import { getContentDiff, getWikiContentHash, getWikiContentSize } from "../../utils/wiki";
+import { deleteWikiHistoriesByWikiId, deleteWikiHistory, getLatestWikiHistory, getWikiHistory, getWikiLatestHistoryByWikiIdAndVersion, setWikiHistory, updateWikiHistory } from "../db/wikiHistory";
+import { canMergeWiki, getContentDiff, getWikiContentHash, getWikiContentSize, mergeWiki } from "../../utils/wiki";
 import { deleteWikiContributor, deleteWikiContributorsByWikiId, getWikiContributor, getWikiContributorsByWikiId, setWikiContributor, updateWikiContributor } from "../db/wikiContributor";
 import type { DbResult } from "../type";
 import { removeItemsByWikiId } from "../db/favoritesItem";
@@ -12,6 +12,7 @@ export type WikiUpdate = {
   title: string;
   content: string;
   updateMessage: string;
+  version: string;
   author: User;
   tags: string[];
 };
@@ -116,29 +117,78 @@ export async function updateWikiService(wikiId: string, data: WikiUpdate): Promi
     history: WikiHistory;
     contributor: WikiContributor;
 }>> {
-
-    // 기존 위키 조회
-    const getWikiResult = await getWiki(wikiId);
+    const [getWikiResult, getOriginalWikiHistoryResult, getLatestWikiHistoryResult] = await Promise.all([
+        getWiki(wikiId),
+        getWikiLatestHistoryByWikiIdAndVersion(wikiId, Number(data.version)),
+        getLatestWikiHistory(wikiId),
+    ])
     if (!getWikiResult.success) {
         return getWikiResult;
     }
-    const previousWiki = getWikiResult.data;
-    checkAccessWiki(previousWiki, data.author)
-
-    // 기존 위키 히스토리 조회
-    const getLatestWikiHistoryResult = await getLatestWikiHistory(wikiId);
+    if (!getOriginalWikiHistoryResult.success) {
+        return getOriginalWikiHistoryResult;
+    }
     if (!getLatestWikiHistoryResult.success) {
         return getLatestWikiHistoryResult;
     }
+    const currentWiki = getWikiResult.data;
+    const originalWikiHistory = getOriginalWikiHistoryResult.data;
     const latestWikiHistory = getLatestWikiHistoryResult.data;
+
+    checkAccessWiki(currentWiki, data.author)
+
+    // 최신 위키 버전과 파라미터로 받은 버전이 다르면
+    if (currentWiki.version !== Number(data.version)) {
+        console.log("자동 병합 시도", "\n", originalWikiHistory.content, "\n", data.content, "\n", latestWikiHistory.content)
+
+        // 자동 병합이 가능한지 확인
+        const canMerge = canMergeWiki({
+            title: originalWikiHistory.title,
+            tags: originalWikiHistory.tags as string[],
+            content: originalWikiHistory.content,
+        }, {
+            title: data.title,
+            tags: data.tags,
+            content: data.content,
+        }, {
+            title: latestWikiHistory.title,
+            tags: latestWikiHistory.tags as string[],
+            content: latestWikiHistory.content,
+        });
+
+        // 자동 병합이 불가능하면 오류 반환
+        if (!canMerge) {
+            console.log("자동 병합 불가능")
+            return { success: false, error: new Error("자동 병합이 불가능합니다.") };
+        }
+
+        // 자동 병합 수행
+        const mergedWiki = mergeWiki({
+            title: originalWikiHistory.title,
+            tags: originalWikiHistory.tags as string[],
+            content: originalWikiHistory.content,
+        }, {
+            title: data.title,
+            tags: data.tags,
+            content: data.content,
+        }, {
+            title: latestWikiHistory.title,
+            tags: latestWikiHistory.tags as string[],
+            content: latestWikiHistory.content,
+        });
+
+        data.title = mergedWiki.title;
+        data.tags = mergedWiki.tags;
+        data.content = mergedWiki.content;
+    }
 
     // 1. 위키 업데이트
     const updateWikiResult = await updateWiki(wikiId, {
         title: data.title,
         content: data.content,
         updatedAt: new Date(),
-        version: previousWiki.latestVersion + 1,
-        latestVersion: previousWiki.latestVersion + 1,
+        version: currentWiki.latestVersion + 1,
+        latestVersion: currentWiki.latestVersion + 1,
         lastEditor: data.author.id,
         lastEditorName: data.author.name,
         lastEditorEmail: data.author.email,
@@ -150,7 +200,7 @@ export async function updateWikiService(wikiId: string, data: WikiUpdate): Promi
     const updatedWiki = updateWikiResult.data;
 
     // 2. 위키 업데이트 이력 생성
-    const { added, removed } = getContentDiff(previousWiki.content, data.content);
+    const { added, removed } = getContentDiff(currentWiki.content, data.content);
 
     const historyData: Omit<WikiHistory, "id"> = {
         wikiId: wikiId,

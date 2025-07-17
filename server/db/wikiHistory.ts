@@ -1,4 +1,4 @@
-import { eq, desc, asc, sql } from 'drizzle-orm';
+import { eq, desc, asc, sql, and } from 'drizzle-orm';
 import { db } from '.';
 import { WIKI_HISTORY_SCHEMA } from './schema';
 import type { WikiHistory } from './schema';
@@ -52,6 +52,29 @@ export async function getWikiHistoriesByWikiId(
     return {
       success: false,
       error: { message: `Failed to get wiki histories: ${error}` },
+    };
+  }
+}
+
+export async function getWikiLatestHistoryByWikiIdAndVersion(wikiId: string, version: number): Promise<DbResult<WikiHistory>> {
+  try {
+    const result = await db
+      .select()
+      .from(WIKI_HISTORY_SCHEMA)
+      .where(and(eq(WIKI_HISTORY_SCHEMA.wikiId, wikiId), eq(WIKI_HISTORY_SCHEMA.version, version)))
+      .orderBy(desc(WIKI_HISTORY_SCHEMA.changedAt))
+      .limit(1);
+
+    if (result.length > 0) {
+      return { success: true, data: result[0] };
+    } else {
+      return { success: false, error: { message: "Wiki history not found" } };
+    }
+  } catch (error) {
+    console.error(error)
+    return {
+      success: false,
+      error: { message: `Failed to get wiki latest history by wiki id and version: ${error}` },
     };
   }
 }

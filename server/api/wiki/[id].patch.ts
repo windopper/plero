@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
         })
     }
 
-    const { title, content, updateMessage, tags } = await readBody(event)
+    const { title, content, updateMessage, tags, version } = await readBody(event)
     if (!title || !content || !updateMessage) {
         throw createError({
             statusCode: 400,
@@ -26,10 +26,20 @@ export default defineEventHandler(async (event) => {
         content,
         updateMessage,
         tags: tags || [],
-        author: user as User
+        author: user as User,
+        version: version || "0"
     })
 
     if (!result.success) {
+        console.log(result.error.message)
+        if (result.error.message === "자동 병합이 불가능합니다.") {
+            return {
+                success: false,
+                error: {
+                    message: "자동 병합이 불가능합니다."
+                }
+            }
+        }
         throw createError({
             statusCode: 500,
             statusMessage: result.error.message

@@ -46,13 +46,7 @@ const loadUserFavoritesData = async () => {
     
     loading.value = true;
     try {
-        const { data } = await $fetch(`/api/favorites/user/wiki/${props.wikiId}`) as {
-            data: {
-                isFavorited: boolean;
-                availableLists: SerializedFavoritesList[];
-                favoritedLists: SerializedFavoritesList[];
-            }
-        };
+        const { data } = await $fetch(`/api/favorites/user/wiki/${props.wikiId}`)
         isFavorited.value = data.isFavorited;
         // 직렬화된 데이터를 FavoritesList 타입으로 변환
         availableLists.value = data.availableLists.map(list => ({
@@ -108,7 +102,7 @@ const toggleFavorite = async () => {
                         isDefault: true,
                         sortOrder: 0
                     }
-                }) as { data: SerializedFavoritesList };
+                })
                 
                 // 직렬화된 데이터를 FavoritesList 타입으로 변환
                 defaultList = {
@@ -197,7 +191,7 @@ const createNewList = async () => {
                 isDefault: false,
                 sortOrder: availableLists.value.length
             }
-        }) as { data: SerializedFavoritesList };
+        })
         
         // 직렬화된 데이터를 FavoritesList 타입으로 변환
         const newList: FavoritesList = {
@@ -250,7 +244,7 @@ const finishEditingList = async (name?: string) => {
             body: {
                 name: finalName.trim()
             }
-        }) as { data: { name: string } };
+        })
         
         // 목록 업데이트
         const index = availableLists.value.findIndex(list => list.id === editingListId.value);

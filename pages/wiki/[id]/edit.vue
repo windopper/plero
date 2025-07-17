@@ -4,6 +4,7 @@ import Editor from '~/components/wiki/Editor.vue'
 import ContentHeader from '~/components/common/ContentHeader.vue'
 import ContentBody from '~/components/common/ContentBody.vue'
 import NavigationTitle from '~/components/common/NavigationTitle.vue';
+import MergeConflict from '~/components/wiki/editor/MergeConflict.vue';
 
 const route = useRoute()
 const id = route.params.id
@@ -24,6 +25,7 @@ const updateMessage = ref("")
 
 const saveLoading = ref(false)
 const showDeleteConfirm = ref(false)
+const mergeConflict = ref(false)
 
 const save = async () => {
     if (!title.value.trim()) {
@@ -40,8 +42,17 @@ const save = async () => {
     try {
         const res = await $fetch(`/api/wiki/${id}`, {
             method: "PATCH",
-            body: { content: content.value, title: title.value, updateMessage: updateMessage.value, tags: tags.value }
+            body: { content: content.value, title: title.value,
+                updateMessage: updateMessage.value, tags: tags.value, version: wiki.value?.data?.version || "0"
+            }
         })
+        if (!res.success) {
+            if (res.error.message === "자동 병합이 불가능합니다.") {
+                alert("자동 병합이 불가능합니다. 다른 사용자가 수정한 내용이 있습니다.")
+                mergeConflict.value = true
+                return
+            }   
+        }
         navigateTo(`/wiki/${id}`)
     } catch (error) {
         console.error('저장 중 오류가 발생했습니다:', error)
@@ -50,6 +61,10 @@ const save = async () => {
         saveLoading.value = false
     }
 }
+
+watch(mergeConflict, (newVal) => {
+    console.log(newVal)
+})
 
 const handleDelete = () => {
     showDeleteConfirm.value = true
@@ -115,7 +130,11 @@ onUnmounted(() => {
     </ContentHeader>
 
     <!-- 메인 컨텐츠 -->
-    <ContentBody>
+    <ContentBody class="flex flex-col gap-6">
+        <div v-if="mergeConflict">
+            <MergeConflict :id="id" :master-version="wiki.data.version" />
+        </div>
+
         <!-- 편집기 영역 -->
         <div class="mb-6">
             <div class="bg-[var(--ui-bg)] border border-[var(--ui-border)] rounded-xl shadow-sm overflow-hidden">
