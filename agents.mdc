@@ -206,6 +206,11 @@ const response = await fetch('/api/ai/wiki', {
 - 위키 생성: 이미지, PDF, 문서 분석
 - 편집 툴팁: 파일 첨부 기반 정확한 편집
 
+### 위키 에이전트 초기 설정 UI (2024-12-27)
+- 에이전트 지시사항, reasoning effort(1-10), 다층 문서 허용 여부 설정
+- 프로젝트 디자인 시스템 준수, 반응형 UI, 키보드 단축키 지원
+- `/agent` 페이지에서 접근 가능 (TODO: API 엔드포인트 구현 필요)
+
 ## 📊 데이터베이스 (Drizzle ORM + PostgreSQL)
 
 ### AWS Aurora DSQL 연동 (2024-12-27)

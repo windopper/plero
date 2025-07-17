@@ -1,4 +1,4 @@
-import { eq, count } from 'drizzle-orm';
+import { eq, count, like } from 'drizzle-orm';
 import { db } from '.';
 import { USER_SCHEMA } from './schema';
 import type { User } from './schema';
@@ -20,6 +20,36 @@ export async function getUser(id: string): Promise<DbResult<User>> {
         }
     } catch (error) {
         return { success: false, error: { message: `Failed to get user: ${error}` } };
+    }
+}
+
+export async function getUserList(options: {
+    query: string;
+    exclusiveStartKey?: string;
+    limit: number;
+}): Promise<DbResult<{ users: User[], lastEvaluatedKey?: string, hasMore: boolean }>> {
+    const { query, exclusiveStartKey, limit } = options;
+    try {
+        let offset = 0;
+        if (exclusiveStartKey) {
+            offset = Number(exclusiveStartKey);
+        }
+
+        const result = await db
+            .select()
+            .from(USER_SCHEMA)
+            .where(like(USER_SCHEMA.displayName, `%${query}%`))
+            .orderBy(USER_SCHEMA.createdAt)
+            .limit(limit + 1)
+            .offset(offset)
+
+        const hasMore = result.length > limit;
+        const resultUsers = hasMore ? result.slice(0, limit) : result;
+        const lastEvaluatedKey = hasMore ? (offset + limit).toString() : undefined;
+
+        return { success: true, data: { users: resultUsers, lastEvaluatedKey, hasMore } };
+    } catch (error) {
+        return { success: false, error: { message: `Failed to get user list: ${error}` } };
     }
 }
 
